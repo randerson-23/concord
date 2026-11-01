@@ -2,25 +2,25 @@
 
 **Phase:** A — building the engine · **Wedge:** broker algo specs → FIXatdl
 **Build:** green (39 tests, schema-validated against FIXatdl 1.1)
+**Repo:** <https://github.com/randerson-23/concord>
 
 ## Last run
 
 **2026-11-01 — bootstrap (interactive session).** Set up the project:
 IR v0.1, FIXatdl 1.1 reader and writer, CLI, CI, synthetic test fixture,
 operating manual, backlog, decision log, corpus policy. Writer output and the
-fixture both validate against the official FIXatdl 1.1 XSDs.
+fixture both validate against the official FIXatdl 1.1 XSDs. Pushed to `main`
+and `dev`. Daily runs start 2026-11-02, weekdays 05:37 US Central.
 
 ## Needs owner
 
 Each item: the question, the recommended answer, what it blocks. Reply in the
 PR or edit this file.
 
-1. **Install the Claude GitHub App on `randerson-23/concord`.**
-   *Blocks everything* — automated runs cannot save work without push access.
-   Do it at <https://claude.ai/connect-github>. Then tell the bootstrap
-   session, which will push this commit and smoke-test the daily task. If a
-   fired run cannot reach the repo, edit the "Concord daily build" routine in
-   claude.ai and add `randerson-23/concord` as its repository.
+1. **Open a pull request from `dev` into `main`** once `dev` has commits.
+   Daily runs can push but cannot create pull requests (their sessions have no
+   GitHub API tools). After the PR exists, every run's push adds to it
+   automatically. *Blocks:* nothing — just makes review one click.
 2. **Check your employment agreement before Concord goes public.** Look for
    an IP-assignment clause (especially one covering work "related to the
    business" or done "using company knowledge"), a moonlighting or
