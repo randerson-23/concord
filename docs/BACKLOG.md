@@ -15,13 +15,16 @@ States: `todo` · `doing` · `done YYYY-MM-DD` · `blocked: <reason>`
 
 ## Phase A — the engine (no owner input needed)
 
-1. `todo` **Spec diff engine.** `concord diff old new` comparing two
+1. `done 2026-11-02` **Spec diff engine.** `concord diff old new` comparing two
    `AlgoSpec`s. Classify every change as *breaking* (tag removed, enum value
    removed, parameter became required, range narrowed, type changed, strategy
    wire value changed), *additive* (new optional parameter, new enum value,
    range widened) or *cosmetic* (labels, descriptions). Output human-readable
    text and JSON. This is the first feature people will pay for — make the
    report read the way a FIX support engineer would want it.
+   Follow-ups: diff Citation changes (provenance drift) and reorder-only
+   changes; match strategies by wire value when names change; diff against
+   real public FIXatdl samples once item 2 lands.
 2. `todo` **Public FIXatdl samples.** Find FIXatdl files published on GitHub
    under permissive licenses (start with `atdl4j/atdl4j` examples and
    `FixPortal/fixportal-fixatdl`). Record each in `corpus/sources.yaml`

@@ -56,3 +56,14 @@ artifacts are Apache 2.0 and may be vendored with attribution.
 
 Concord is proprietary software. GPL, AGPL and LGPL packages are excluded.
 Notably PyMuPDF (AGPL) — use `pypdf` or `pdfplumber`.
+
+## D9 · 2026-11-02 · Diff classification rules
+
+Matching: strategies by `name`; parameters by `name`, with a removed+added pair
+sharing a `fix_tag` treated as a cosmetic rename. Bounds (min/max value,
+length, precision) compare numerically; a new bound is breaking, a removed
+bound additive. A changed `default_value` is *additive* (the wire contract is
+unchanged; the client may still send its own value). A new or changed rule
+(StrategyEdit) is breaking; a removed one additive. Unlisted applicability is
+unrestricted unless the spec lists included items of that kind. Any of these
+may be proposed for change under *Needs owner* if they read wrong in practice.

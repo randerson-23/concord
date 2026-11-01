@@ -1,16 +1,16 @@
 # Status
 
 **Phase:** A — building the engine · **Wedge:** broker algo specs → FIXatdl
-**Build:** green (39 tests, schema-validated against FIXatdl 1.1)
+**Build:** green (see CI; schema-validated against FIXatdl 1.1)
 **Repo:** <https://github.com/randerson-23/concord>
 
 ## Last run
 
-**2026-11-01 — bootstrap (interactive session).** Set up the project:
-IR v0.1, FIXatdl 1.1 reader and writer, CLI, CI, synthetic test fixture,
-operating manual, backlog, decision log, corpus policy. Writer output and the
-fixture both validate against the official FIXatdl 1.1 XSDs. Pushed to `main`
-and `dev`. Daily runs start 2026-11-02, weekdays 05:37 US Central.
+**2026-11-02 — spec diff engine.** Added `concord.diff` and
+`concord diff old new [--format json] [--fail-on-breaking]`. Changes are
+classified breaking / additive / cosmetic (strategies, parameters, enums,
+bounds, applicability, rules); same-tag renames are cosmetic. 25+ new tests.
+Schema tests were skipped (no XSD dir set).
 
 ## Needs owner
 

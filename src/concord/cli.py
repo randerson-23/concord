@@ -7,6 +7,7 @@ import json
 import sys
 from pathlib import Path
 
+from concord.diff import diff_specs
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
 from concord.ir import AlgoSpec
 
@@ -59,6 +60,13 @@ def main(argv: list[str] | None = None) -> int:
     c = sub.add_parser("convert", help="convert between FIXatdl and IR JSON")
     c.add_argument("file")
     c.add_argument("--to", choices=["json", "fixatdl"], required=True)
+    d = sub.add_parser("diff", help="classify the changes between two specs")
+    d.add_argument("old")
+    d.add_argument("new")
+    d.add_argument("--format", choices=["text", "json"], default="text")
+    d.add_argument(
+        "--fail-on-breaking", action="store_true", help="exit 2 if any breaking change is found"
+    )
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
 
@@ -67,6 +75,11 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(AlgoSpec.model_json_schema(), indent=2))
         elif args.cmd == "inspect":
             print(_inspect(_load(args.file)))
+        elif args.cmd == "diff":
+            report = diff_specs(_load(args.old), _load(args.new))
+            print(report.to_json() if args.format == "json" else report.to_text())
+            if args.fail_on_breaking and report.has_breaking:
+                return 2
         elif args.cmd == "convert":
             spec = _load(args.file)
             if args.to == "json":
