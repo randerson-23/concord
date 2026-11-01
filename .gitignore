@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.coverage
+# Corpus documents are fetched from their public URLs, never committed.
+corpus/cache/
+# Third-party schemas stay out of the repo until their license is confirmed.
+schemas/vendor/

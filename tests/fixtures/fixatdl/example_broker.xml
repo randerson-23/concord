@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SYNTHETIC TEST FIXTURE - written for Concord's test suite.
+  "Example Broker" (EXBK) is fictional. Tags, strategies and rules are invented
+  to exercise FIXatdl 1.1 features; they do not describe any real provider.
+-->
+<Strategies xmlns="http://www.fixprotocol.org/FIXatdl-1-1/Core"
+            xmlns:val="http://www.fixprotocol.org/FIXatdl-1-1/Validation"
+            xmlns:lay="http://www.fixprotocol.org/FIXatdl-1-1/Layout"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            strategyIdentifierTag="7620" versionIdentifierTag="7621">
+  <Description>Example Broker algorithmic suite for cash equities.</Description>
+
+  <!-- A named edit reused by more than one strategy via EditRef. -->
+  <val:Edit id="EndAfterStart" logicOperator="OR">
+    <val:Edit field="EndTime" operator="NX"/>
+    <val:Edit field="EndTime" operator="GT" field2="StartTime"/>
+  </val:Edit>
+
+  <Strategy name="EXBK_VWAP" uiRep="VWAP" wireValue="1" version="3" fixMsgType="D" providerID="EXBK">
+    <Description>Participates in line with the historical volume curve.</Description>
+    <Regions>
+      <Region name="TheAmericas" inclusion="Include">
+        <Country CountryCode="CA" inclusion="Exclude"/>
+      </Region>
+    </Regions>
+    <Markets>
+      <Market MICCode="XNYS" inclusion="Include"/>
+      <Market MICCode="XNAS" inclusion="Include"/>
+    </Markets>
+    <SecurityTypes>
+      <SecurityType name="CS" inclusion="Include"/>
+    </SecurityTypes>
+
+    <Parameter xsi:type="UTCTimestamp_t" name="StartTime" fixTag="7602" localMktTz="America/New_York">
+      <Description>Time the algo begins working. Exchange local time.</Description>
+    </Parameter>
+    <Parameter xsi:type="UTCTimestamp_t" name="EndTime" fixTag="7603" localMktTz="America/New_York"/>
+    <Parameter xsi:type="Percentage_t" name="MaxPctVolume" fixTag="7604" minValue="0.01" maxValue="0.5" multiplyBy100="true" precision="2">
+      <Description>Cap on participation as a share of market volume.</Description>
+    </Parameter>
+    <Parameter xsi:type="Char_t" name="Urgency" fixTag="7605" use="required">
+      <EnumPair enumID="u_low" wireValue="L"/>
+      <EnumPair enumID="u_med" wireValue="M"/>
+      <EnumPair enumID="u_high" wireValue="H">
+        <Description>Front-loads execution; expect higher impact.</Description>
+      </EnumPair>
+    </Parameter>
+    <Parameter xsi:type="Boolean_t" name="AllowAuction" fixTag="7606" trueWireValue="1" falseWireValue="0" mutableOnCxlRpl="false"/>
+    <Parameter xsi:type="Qty_t" name="MinFillQty" fixTag="7607" minValue="100"/>
+    <Parameter xsi:type="String_t" name="Venue" fixTag="7608" constValue="SMART"/>
+
+    <lay:StrategyLayout>
+      <lay:StrategyPanel title="VWAP" orientation="VERTICAL" collapsible="false">
+        <lay:StrategyPanel title="Timing" orientation="HORIZONTAL">
+          <lay:Control xsi:type="lay:Clock_t" ID="startClock" parameterRef="StartTime" label="Start" initValue="09:30:00"/>
+          <lay:Control xsi:type="lay:Clock_t" ID="endClock" parameterRef="EndTime" label="End"/>
+        </lay:StrategyPanel>
+        <lay:Control xsi:type="lay:TextField_t" ID="pctField" parameterRef="MaxPctVolume" label="Max % Volume" initValue="0.2"/>
+        <lay:Control xsi:type="lay:DropDownList_t" ID="urgencyList" parameterRef="Urgency" label="Urgency" initValue="u_med">
+          <lay:ListItem enumID="u_low" uiRep="Passive"/>
+          <lay:ListItem enumID="u_med" uiRep="Normal"/>
+          <lay:ListItem enumID="u_high" uiRep="Aggressive"/>
+        </lay:Control>
+        <lay:Control xsi:type="lay:CheckBox_t" ID="auctionBox" parameterRef="AllowAuction" label="Participate in auctions" initValue="true"/>
+        <lay:Control xsi:type="lay:TextField_t" ID="minFill" parameterRef="MinFillQty" label="Min fill"/>
+      </lay:StrategyPanel>
+    </lay:StrategyLayout>
+
+    <val:StrategyEdit errorMessage="End time must be after start time.">
+      <val:EditRef id="EndAfterStart"/>
+    </val:StrategyEdit>
+    <val:StrategyEdit errorMessage="Max % volume above 25% requires High urgency.">
+      <val:Edit logicOperator="OR">
+        <val:Edit field="MaxPctVolume" operator="LE" value="0.25"/>
+        <val:Edit field="Urgency" operator="EQ" value="H"/>
+      </val:Edit>
+    </val:StrategyEdit>
+    <val:StrategyEdit errorMessage="Min fill cannot exceed order quantity.">
+      <val:Edit logicOperator="OR">
+        <val:Edit field="MinFillQty" operator="NX"/>
+        <val:Edit field="MinFillQty" operator="LE" field2="FIX_OrderQty"/>
+      </val:Edit>
+    </val:StrategyEdit>
+  </Strategy>
+
+  <Strategy name="EXBK_TWAP" uiRep="TWAP" wireValue="2" version="1" providerID="EXBK">
+    <Parameter xsi:type="UTCTimestamp_t" name="StartTime" fixTag="7602"/>
+    <Parameter xsi:type="UTCTimestamp_t" name="EndTime" fixTag="7603" use="required"/>
+    <Parameter xsi:type="Int_t" name="Slices" fixTag="7610" minValue="1" maxValue="100"/>
+    <lay:StrategyLayout>
+      <lay:StrategyPanel orientation="VERTICAL">
+        <lay:Control xsi:type="lay:Clock_t" ID="s" parameterRef="StartTime" label="Start"/>
+        <lay:Control xsi:type="lay:Clock_t" ID="e" parameterRef="EndTime" label="End"/>
+        <lay:Control xsi:type="lay:TextField_t" ID="n" parameterRef="Slices" label="Slices" initValue="10"/>
+      </lay:StrategyPanel>
+    </lay:StrategyLayout>
+    <val:StrategyEdit errorMessage="End time must be after start time.">
+      <val:EditRef id="EndAfterStart"/>
+    </val:StrategyEdit>
+  </Strategy>
+</Strategies>

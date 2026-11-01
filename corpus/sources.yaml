@@ -1,0 +1,5 @@
+# Manifest of public documents used for development and testing.
+# Rules and entry format: corpus/README.md
+# Documents are fetched into corpus/cache/ (git-ignored); never commit them.
+
+sources: []
