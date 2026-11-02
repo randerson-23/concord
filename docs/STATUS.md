@@ -9,17 +9,13 @@
 **2026-11-02 (second run) — PDF text layer.** Added `concord.pdf`: page-numbered
 text, layout text, heuristic table rows, quote normalisation (pypdf, BSD-3).
 5 tests on a synthetic PDF. Item 2 (public FIXatdl samples) is blocked: the
-session's GitHub scope is this repo only. Pull request could not be created
-(see Needs owner 1).
+session's GitHub scope is this repo only. PR #1 updated.
 
 ## Needs owner
 
 Each item: the question, the recommended answer, what it blocks. Reply in the
 PR or edit this file.
 
-1. **Open a pull request from `dev` into `main`** once `dev` has commits.
-   Check whether one exists; runs may lack the ability to create it. After the PR exists, every run's push adds to it
-   automatically. *Blocks:* nothing — just makes review one click.
 2. **Check your employment agreement before Concord goes public.** Look for
    an IP-assignment clause (especially one covering work "related to the
    business" or done "using company knowledge"), a moonlighting or
