@@ -8,6 +8,7 @@ license = { text = "Proprietary" }
 dependencies = [
   "lxml>=5.2",
   "pydantic>=2.7",
+  "pypdf>=6.21.4",
 ]
 
 [project.scripts]

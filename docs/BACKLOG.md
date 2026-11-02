@@ -25,16 +25,19 @@ States: `todo` · `doing` · `done YYYY-MM-DD` · `blocked: <reason>`
    Follow-ups: diff Citation changes (provenance drift) and reorder-only
    changes; match strategies by wire value when names change; diff against
    real public FIXatdl samples once item 2 lands.
-2. `todo` **Public FIXatdl samples.** Find FIXatdl files published on GitHub
+2. `blocked: session GitHub scope covers only randerson-23/concord, so other repos (atdl4j etc.) can't be read` **Public FIXatdl samples.** Find FIXatdl files published on GitHub
    under permissive licenses (start with `atdl4j/atdl4j` examples and
    `FixPortal/fixportal-fixatdl`). Record each in `corpus/sources.yaml`
    with URL and license. Add a test that fetches them into `corpus/cache/`
    (skipped when offline) and reads every one without error. Fix reader gaps
    they expose. Do not commit the files themselves.
-3. `todo` **PDF text layer.** `concord.pdf`: page-aware text and table
+3. `done 2026-11-02` **PDF text layer.** `concord.pdf`: page-aware text and table
    extraction that keeps page numbers, for citations. Use `pypdf` or
    `pdfplumber` (permissive). Not PyMuPDF (AGPL). Test against a synthetic PDF
    generated in the test itself.
+   Done: `concord.pdf` (`read_pdf`, `extract_tables`, `normalize`); tables are a
+   layout-gap heuristic. Follow-up: ruled-table detection via pdfplumber if the
+   heuristic proves weak on real specs.
 4. `todo` **Citation verifier.** Given an `AlgoSpec` and its source PDF,
    confirm every citation's `quote` actually appears on its cited `page`
    (whitespace- and hyphenation-tolerant). Report failures. This is the
