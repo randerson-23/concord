@@ -38,11 +38,14 @@ States: `todo` · `doing` · `done YYYY-MM-DD` · `blocked: <reason>`
    Done: `concord.pdf` (`read_pdf`, `extract_tables`, `normalize`); tables are a
    layout-gap heuristic. Follow-up: ruled-table detection via pdfplumber if the
    heuristic proves weak on real specs.
-4. `todo` **Citation verifier.** Given an `AlgoSpec` and its source PDF,
+4. `done 2026-11-03` **Citation verifier.** Given an `AlgoSpec` and its source PDF,
    confirm every citation's `quote` actually appears on its cited `page`
    (whitespace- and hyphenation-tolerant). Report failures. This is the
    deterministic guard against an LLM inventing a rule — it is the core of
    the accuracy story, so make it strict.
+   Done: `concord.verify` + `concord verify spec.json --source ID=PDF` (exit 2 on
+   any failure). Follow-ups: check `Citation.locator`; flag quotes that match
+   on several pages when none is cited.
 5. `todo` **LLM extraction scaffold.** `concord.extract`: chunk a PDF by page,
    ask Claude for IR fragments with mandatory page+quote citations via
    structured output, merge fragments into one `AlgoSpec`, run the citation

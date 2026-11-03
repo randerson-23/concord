@@ -10,6 +10,8 @@ from pathlib import Path
 from concord.diff import diff_specs
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
 from concord.ir import AlgoSpec
+from concord.pdf import read_pdf
+from concord.verify import verify_spec
 
 
 def _load(path: str) -> AlgoSpec:
@@ -67,6 +69,16 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument(
         "--fail-on-breaking", action="store_true", help="exit 2 if any breaking change is found"
     )
+    v = sub.add_parser("verify", help="check every citation quote appears on its cited PDF page")
+    v.add_argument("spec")
+    v.add_argument(
+        "--source",
+        action="append",
+        default=[],
+        metavar="ID=PDF",
+        help="map a source id to its PDF (repeatable)",
+    )
+    v.add_argument("--format", choices=["text", "json"], default="text")
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
 
@@ -79,6 +91,17 @@ def main(argv: list[str] | None = None) -> int:
             report = diff_specs(_load(args.old), _load(args.new))
             print(report.to_json() if args.format == "json" else report.to_text())
             if args.fail_on_breaking and report.has_breaking:
+                return 2
+        elif args.cmd == "verify":
+            docs = {}
+            for item in args.source:
+                sid, sep, path = item.partition("=")
+                if not sep or not sid or not path:
+                    raise ValueError(f"--source {item!r}: expected ID=PDF_PATH")
+                docs[sid] = read_pdf(path)
+            vr = verify_spec(_load(args.spec), docs)
+            print(vr.to_json() if args.format == "json" else vr.to_text())
+            if not vr.ok:
                 return 2
         elif args.cmd == "convert":
             spec = _load(args.file)

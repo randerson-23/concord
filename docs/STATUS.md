@@ -6,10 +6,11 @@
 
 ## Last run
 
-**2026-11-02 (second run) — PDF text layer.** Added `concord.pdf`: page-numbered
-text, layout text, heuristic table rows, quote normalisation (pypdf, BSD-3).
-5 tests on a synthetic PDF. Item 2 (public FIXatdl samples) is blocked: the
-session's GitHub scope is this repo only. PR #1 updated.
+**2026-11-03 — Citation verifier.** Added `concord.verify` and
+`concord verify spec.json --source ID=PDF`. A citation passes only if its quote
+is on its cited page (case-sensitive; folds whitespace, hyphenation, curly
+quotes, dashes). Reports not-found, wrong-page (with the right page), missing
+quote/page, unknown source. 4 tests. Item 5 (LLM scaffold) is next.
 
 ## Needs owner
 

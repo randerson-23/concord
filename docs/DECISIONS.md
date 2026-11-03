@@ -67,3 +67,10 @@ unchanged; the client may still send its own value). A new or changed rule
 (StrategyEdit) is breaking; a removed one additive. Unlisted applicability is
 unrestricted unless the spec lists included items of that kind. Any of these
 may be proposed for change under *Needs owner* if they read wrong in practice.
+
+## D10 · 2026-11-03 · Citation verification is exact after folding
+
+Quotes are compared case-sensitively against the cited page's text after NFKC,
+typographic-character folding, whitespace collapse and line-break de-hyphenation.
+No fuzzy scoring: a near-miss is a failure for human review, not a pass.
+Uncheckable citations (no page/quote/source) fail rather than pass silently.
