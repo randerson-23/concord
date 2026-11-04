@@ -9,18 +9,13 @@
 **2026-11-04 — agents + auto-merge (owner request).** Added
 `.claude/agents/product-manager.md` (Opus 5.5) and `.claude/agents/worker.md`
 (Sonnet 5.5). Runs now plan → build → commit → merge (D12). Merged the backlog
-of five runs to `main`. Earlier today: catalogued 10 public algo-spec
+of five runs to `main`. CI now runs by manual trigger before each merge (D13). Earlier today: catalogued 10 public algo-spec
 candidates (backlog item 8, 10 of 25).
 
 ## Needs owner
 
 Each item: the question, the recommended answer, what it blocks. Reply in the
 PR or edit this file.
-
-1. **Update the scheduled routine's prompt.** It still says "never merge a pull
-   request" and "keep one PR updated", which contradicts D12. *Recommended:*
-   replace that sentence with "merge the `dev → main` PR per D12 in CLAUDE.md".
-   *Blocks:* auto-merge on scheduled runs (they will otherwise stop at the PR).
 
 2. **Check your employment agreement before Concord goes public.** Look for
    an IP-assignment clause (especially one covering work "related to the
