@@ -102,6 +102,13 @@ description as a summary of the run(s) it carries. Then, per D12, merge it
 with a **merge commit** once local checks and CI are green. If CI is red, do
 not merge: fix it on `dev` or record it under *Needs owner*.
 
+Pushes and merges made by these sessions do **not** trigger GitHub Actions
+(D13). Start CI yourself: trigger `ci.yml` with `workflow_dispatch` on ref
+`dev` (GitHub MCP `actions_run_trigger`, method `run_workflow`), wait for that
+run to complete on your pushed `dev` HEAD, and merge only if it succeeded.
+Pass the PR's head SHA as the expected SHA when merging, and confirm it
+equals your local `dev` HEAD first.
+
 If GitHub API tools are not available in your session, `git push` still
 works, and an existing PR picks up the new commits on its own. Skip the PR
 step, and if no PR exists yet, add *"Open a PR from `dev` into `main`"* under

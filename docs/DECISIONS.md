@@ -92,3 +92,11 @@ orchestrating session commits, pushes `dev`, and merges the `dev → main` PR
 itself with a merge commit once checks are green — "for now", until the owner
 revokes this. This amends D3 (the review gate is suspended) and D4 (runs, not
 the owner, merge). Direct pushes to `main` and force-pushes remain forbidden.
+
+## D13 · 2026-11-04 · Sessions start CI by hand before merging
+
+Repo Actions are enabled and `ci.yml` passes (manual run 41898654875), but
+pushes and merges made by Claude sessions never trigger it: no run exists for
+any of their push or pull_request events. `ci.yml` therefore also accepts
+`workflow_dispatch`, and each run triggers it on `dev` and waits for success
+before merging (CLAUDE.md step 7). Pushes the owner makes trigger CI as usual.
