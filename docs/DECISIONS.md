@@ -82,3 +82,13 @@ verifier (D10); failed citations are stripped, failed facts go to the review lis
 The model backend is a protocol so CI uses recorded responses. The `anthropic`
 SDK is an optional extra (`llm`), not a core dependency. First page's value wins
 on a merge disagreement and the disagreement is reviewed.
+
+## D12 · 2026-11-04 · PM + worker agents; runs auto-merge to `main`
+
+*Owner decision.* Each run uses two subagents defined in `.claude/agents/`:
+`product-manager` (Opus 5.5) researches and owns the roadmap in
+`docs/BACKLOG.md`; `worker` (Sonnet 5.5) builds the top unblocked item. The
+orchestrating session commits, pushes `dev`, and merges the `dev → main` PR
+itself with a merge commit once checks are green — "for now", until the owner
+revokes this. This amends D3 (the review gate is suspended) and D4 (runs, not
+the owner, merge). Direct pushes to `main` and force-pushes remain forbidden.
