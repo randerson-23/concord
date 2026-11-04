@@ -26,7 +26,10 @@ require breaking one, stop that task and record it under *Needs owner* in
    `corpus/cache/` (git-ignored). Third-party schemas (e.g. the FIXatdl XSDs)
    stay out of the repo until their license is confirmed in
    `docs/DECISIONS.md`. Test fixtures are synthetic and written by us.
-3. **Never push to `main`.** Automated work goes to `dev`. The owner merges.
+3. **Never push directly to `main`.** Work goes to `dev` and reaches `main`
+   only through the `dev → main` pull request. Until the owner revokes D12,
+   each run merges that PR itself once checks are green (merge commit, never
+   squash or rebase, never force-push).
 4. **Green before push.** `uv run ruff check .`, `uv run ruff format --check .`
    and `uv run pytest` must all pass before every push.
 5. **No copyleft dependencies.** Concord is proprietary. No GPL/AGPL/LGPL
@@ -57,26 +60,23 @@ Read `docs/STATUS.md`, `docs/BACKLOG.md` and `docs/DECISIONS.md`. Check
 whether the owner left answers under *Needs owner* in STATUS — act on them
 first and move them to the decision log if they are decisions.
 
-### 3. Review gate
+### 3. Plan — `product-manager` agent (Opus 5.5)
 
-Count how many daily runs are waiting for the owner:
+Spawn the `product-manager` subagent (`.claude/agents/product-manager.md`).
+It researches (competitors, public corpus, customer signal) and rewrites
+`docs/BACKLOG.md` so the top `todo` item is the most valuable thing to finish
+today. Skip this step only if the PM already ran today.
 
-```sh
-git log --oneline origin/main..dev --grep='^run:' | wc -l
-```
+The review gate (hold mode after 5 unreviewed runs) is suspended while D12
+auto-merge is in force, because nothing waits for review.
 
-- **Fewer than 5** — normal mode. Take the top unblocked `todo` item.
-- **5 or more** — hold mode. The owner is behind on review; do not pile more
-  feature work on top. Take only items tagged `[safe]` (tests, docs, research,
-  refactors with no behaviour change). If none remain, update STATUS, push, and
-  end the run.
+### 4. Build — `worker` agent (Sonnet 5.5)
 
-### 4. Work one item
-
-Take the highest `todo` item in `docs/BACKLOG.md` that is not blocked. If it is
-too big for one session, split it in the backlog and do the first part.
-Finish what you start: a run that leaves the build red, or a half-built
-feature with no tests, is worse than a run that did less.
+Spawn the `worker` subagent (`.claude/agents/worker.md`) to take the highest
+unblocked `todo` item. It splits items that are too big and finishes what it
+starts: a run that leaves the build red, or a half-built feature with no
+tests, is worse than a run that did less. Check its work (diff and checks)
+before committing — the orchestrating session owns the commit.
 
 ### 5. Verify
 
@@ -97,9 +97,10 @@ set — see `tests/conftest.py`.
 
 Make your final commit's subject start with `run: ` and the date, e.g.
 `run: 2026-11-03 add spec diff engine`. Push `dev`. Make sure exactly one open
-pull request from `dev` into `main` exists — create it if not — and rewrite its
-description as a running summary of every unmerged run, newest first, so the
-owner can review the whole batch in one sitting.
+pull request from `dev` into `main` exists — create it if not — and write its
+description as a summary of the run(s) it carries. Then, per D12, merge it
+with a **merge commit** once local checks and CI are green. If CI is red, do
+not merge: fix it on `dev` or record it under *Needs owner*.
 
 If GitHub API tools are not available in your session, `git push` still
 works, and an existing PR picks up the new commits on its own. Skip the PR

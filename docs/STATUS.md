@@ -6,17 +6,21 @@
 
 ## Last run
 
-**2026-11-04 (hold mode) — corpus catalogue, part 1.** Five unreviewed runs are
-waiting, so only `[safe]` work. Catalogued 10 public candidates in
-`corpus/sources.yaml` (NYSE Pillar algo specs, Proof, CQG, Standard Chartered,
-Saxo, Goldman, etc.). Nothing fetched; publisher terms unreviewed, so entries
-are marked not-yet-usable. Backlog item 8 stays open (10 of 25). Please review
-and merge the batch to reopen feature work.
+**2026-11-04 — agents + auto-merge (owner request).** Added
+`.claude/agents/product-manager.md` (Opus 5.5) and `.claude/agents/worker.md`
+(Sonnet 5.5). Runs now plan → build → commit → merge (D12). Merged the backlog
+of five runs to `main`. Earlier today: catalogued 10 public algo-spec
+candidates (backlog item 8, 10 of 25).
 
 ## Needs owner
 
 Each item: the question, the recommended answer, what it blocks. Reply in the
 PR or edit this file.
+
+1. **Update the scheduled routine's prompt.** It still says "never merge a pull
+   request" and "keep one PR updated", which contradicts D12. *Recommended:*
+   replace that sentence with "merge the `dev → main` PR per D12 in CLAUDE.md".
+   *Blocks:* auto-merge on scheduled runs (they will otherwise stop at the PR).
 
 2. **Check your employment agreement before Concord goes public.** Look for
    an IP-assignment clause (especially one covering work "related to the
