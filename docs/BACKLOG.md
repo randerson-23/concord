@@ -46,12 +46,18 @@ States: `todo` · `doing` · `done YYYY-MM-DD` · `blocked: <reason>`
    Done: `concord.verify` + `concord verify spec.json --source ID=PDF` (exit 2 on
    any failure). Follow-ups: check `Citation.locator`; flag quotes that match
    on several pages when none is cited.
-5. `todo` **LLM extraction scaffold.** `concord.extract`: chunk a PDF by page,
+5. `done 2026-11-04` **LLM extraction scaffold.** `concord.extract`: chunk a PDF by page,
    ask Claude for IR fragments with mandatory page+quote citations via
    structured output, merge fragments into one `AlgoSpec`, run the citation
    verifier, route anything unverified to a review list. Use the latest Claude
    model. Tests run against recorded responses so no API key is needed in CI.
    Live runs `blocked: ANTHROPIC_API_KEY` until the owner adds it.
+   Done: `concord.extract` (`extract_spec`, `Backend` protocol, `ReplayBackend`,
+   `AnthropicBackend`) and `concord extract PDF --id --title --out [--replay DIR]`
+   (exit 2 if the review list is non-empty). Facts without a verified citation
+   never enter the spec. Follow-ups: tune prompt on a real spec once a key exists
+   (item 5b); per-page calls miss cross-page context (consider a second pass that
+   resolves "see table 3"); cost/token accounting.
 6. `todo` **Static spec site.** `concord site spec.json out/`: render an
    `AlgoSpec` as a browsable static HTML reference — strategies, parameter
    tables, enums, rules, with citations linked to source pages. The seed of

@@ -14,6 +14,9 @@ dependencies = [
 [project.scripts]
 concord = "concord.cli:main"
 
+[project.optional-dependencies]
+llm = ["anthropic>=0.40"]  # MIT; only needed for live extraction
+
 [dependency-groups]
 dev = [
   "pytest>=8.2",

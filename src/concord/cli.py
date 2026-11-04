@@ -8,8 +8,9 @@ import sys
 from pathlib import Path
 
 from concord.diff import diff_specs
+from concord.extract import AnthropicBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
-from concord.ir import AlgoSpec
+from concord.ir import AlgoSpec, SourceDocument
 from concord.pdf import read_pdf
 from concord.verify import verify_spec
 
@@ -79,6 +80,15 @@ def main(argv: list[str] | None = None) -> int:
         help="map a source id to its PDF (repeatable)",
     )
     v.add_argument("--format", choices=["text", "json"], default="text")
+    x = sub.add_parser("extract", help="extract an AlgoSpec from a PDF (LLM; citations verified)")
+    x.add_argument("pdf")
+    x.add_argument("--id", required=True, help="source id used in citations")
+    x.add_argument("--title", required=True)
+    x.add_argument("--url", help="public URL the PDF was published at")
+    x.add_argument("--provider")
+    x.add_argument("--out", required=True, help="where to write the IR JSON")
+    x.add_argument("--review-out", help="where to write the review list (JSON)")
+    x.add_argument("--replay", metavar="DIR", help="use recorded page-N.json responses, no API")
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
 
@@ -103,13 +113,25 @@ def main(argv: list[str] | None = None) -> int:
             print(vr.to_json() if args.format == "json" else vr.to_text())
             if not vr.ok:
                 return 2
+        elif args.cmd == "extract":
+            backend = ReplayBackend(args.replay) if args.replay else AnthropicBackend()
+            src = SourceDocument(id=args.id, title=args.title, kind="pdf", url=args.url)
+            res = extract_spec(read_pdf(args.pdf), src, backend, provider=args.provider)
+            Path(args.out).write_text(res.spec.model_dump_json(indent=2, exclude_none=True))
+            if args.review_out:
+                Path(args.review_out).write_text(
+                    json.dumps([r.to_dict() for r in res.review], indent=2)
+                )
+            print(res.review_text())
+            if res.review:
+                return 2
         elif args.cmd == "convert":
             spec = _load(args.file)
             if args.to == "json":
                 print(spec.model_dump_json(indent=2, exclude_none=True))
             else:
                 sys.stdout.buffer.write(write_fixatdl(spec))
-    except (FixatdlError, ValueError, OSError) as exc:
+    except (FixatdlError, ValueError, OSError, RuntimeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     return 0

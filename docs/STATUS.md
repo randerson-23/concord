@@ -6,11 +6,14 @@
 
 ## Last run
 
-**2026-11-03 — Citation verifier.** Added `concord.verify` and
-`concord verify spec.json --source ID=PDF`. A citation passes only if its quote
-is on its cited page (case-sensitive; folds whitespace, hyphenation, curly
-quotes, dashes). Reports not-found, wrong-page (with the right page), missing
-quote/page, unknown source. 4 tests. Item 5 (LLM scaffold) is next.
+**2026-11-04 — LLM extraction scaffold.** Added `concord.extract` and
+`concord extract`. Per page, a backend returns IR fragments; every fact's
+citations are verified against the real page text, unverified facts go to a
+review list, the rest merge into one `AlgoSpec` (disagreements are reviewed, first
+value kept). Backends: `ReplayBackend` (recorded responses, used in tests) and
+`AnthropicBackend` (live, default model `claude-opus-5-5`, needs the optional
+`llm` extra and `ANTHROPIC_API_KEY`). 5 tests; no key needed. Item 6 (static spec
+site) is next.
 
 ## Needs owner
 

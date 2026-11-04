@@ -74,3 +74,11 @@ Quotes are compared case-sensitively against the cited page's text after NFKC,
 typographic-character folding, whitespace collapse and line-break de-hyphenation.
 No fuzzy scoring: a near-miss is a failure for human review, not a pass.
 Uncheckable citations (no page/quote/source) fail rather than pass silently.
+
+## D11 · 2026-11-04 · Extraction keeps only verified facts; SDK is an optional extra
+
+A fact enters the extracted spec only with at least one citation that passes the
+verifier (D10); failed citations are stripped, failed facts go to the review list.
+The model backend is a protocol so CI uses recorded responses. The `anthropic`
+SDK is an optional extra (`llm`), not a core dependency. First page's value wins
+on a merge disagreement and the disagreement is reviewed.
