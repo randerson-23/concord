@@ -6,14 +6,12 @@
 
 ## Last run
 
-**2026-11-04 — LLM extraction scaffold.** Added `concord.extract` and
-`concord extract`. Per page, a backend returns IR fragments; every fact's
-citations are verified against the real page text, unverified facts go to a
-review list, the rest merge into one `AlgoSpec` (disagreements are reviewed, first
-value kept). Backends: `ReplayBackend` (recorded responses, used in tests) and
-`AnthropicBackend` (live, default model `claude-opus-5-5`, needs the optional
-`llm` extra and `ANTHROPIC_API_KEY`). 5 tests; no key needed. Item 6 (static spec
-site) is next.
+**2026-11-04 (hold mode) — corpus catalogue, part 1.** Five unreviewed runs are
+waiting, so only `[safe]` work. Catalogued 10 public candidates in
+`corpus/sources.yaml` (NYSE Pillar algo specs, Proof, CQG, Standard Chartered,
+Saxo, Goldman, etc.). Nothing fetched; publisher terms unreviewed, so entries
+are marked not-yet-usable. Backlog item 8 stays open (10 of 25). Please review
+and merge the batch to reopen feature work.
 
 ## Needs owner
 

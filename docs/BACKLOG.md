@@ -69,7 +69,7 @@ States: `todo` · `doing` · `done YYYY-MM-DD` · `blocked: <reason>`
 
 ## Phase A — research `[safe]`
 
-8. `todo` `[safe]` **Public algo spec catalogue.** Use web search to find
+8. `todo` `[safe]` (10 of 25 catalogued 2026-11-04; need terms review + more brokers) **Public algo spec catalogue.** Use web search to find
    broker and venue algo specifications published openly as PDFs (algo guides,
    FIX rules of engagement with algo sections). Record each in
    `corpus/sources.yaml`: URL, publisher, title, document type, what terms the

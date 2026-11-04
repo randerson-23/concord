@@ -1,5 +1,117 @@
 # Manifest of public documents used for development and testing.
 # Rules and entry format: corpus/README.md
 # Documents are fetched into corpus/cache/ (git-ignored); never commit them.
+# Entries below are CATALOGUED ONLY (found by web search 2026-11-04). None fetched;
+# publisher terms NOT yet reviewed, so do not use for development until `terms` is filled.
 
-sources: []
+sources:
+  - id: nyse-pillar-to-algo-fix
+    title: NYSE Pillar To Algo FIX Specification
+    publisher: NYSE (ICE)
+    url: https://nyse.com/publicdocs/NYSE_Pillar_To_Algo_FIX_Specification.pdf
+    kind: pdf
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Venue-to-algo-provider FIX 4.2 routing spec; TargetStrategy at tag 20046 plus effective/expire times. v1.0 Sept 2024 per search snippet.
+  - id: nyse-pillar-floor-broker-fix
+    title: NYSE Pillar Gateway Floor Broker FIX Specification
+    publisher: NYSE (ICE)
+    url: https://www.nyse.com/publicdocs/NYSE_Pillar_Gateway_Floor_Broker_FIX_Specification.pdf
+    kind: pdf
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Floor broker orders routed to algo providers. v2.4 March 2025 per search snippet.
+  - id: proof-fix-spec
+    title: Proof FIX Specification
+    publisher: Proof
+    url: https://prerak-proof.github.io/proof_blog/Proof%20FIX%20Specification.pdf
+    kind: pdf
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Broker FIX 4.2 spec with custom tags; algo parameters in the 20000 range (e.g. 20001). v1.1 Oct 2021 per search snippet.
+  - id: cqg-algos-technical-parameters
+    title: CQG Algos Technical Parameters 8.12
+    publisher: CQG
+    url: https://www.cqg.com/sites/default/files/docs/cqg_algos_technical_parameters_8-12.pdf
+    kind: pdf
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Algo parameter reference; VWAP percent-of-volume default 5%. Algo ids 1000-1009 via tag 847 per search.
+  - id: standard-chartered-execution-algorithms
+    title: Execution Algorithms (Standard Chartered)
+    publisher: Standard Chartered
+    url: https://www.sc.com/EN/uploads/sites/66/content/docs/execution-algorithms-standard-chartered.pdf
+    kind: pdf
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      TWAP/VWAP etc.; lists compulsory parameters. Check whether it carries FIX tags.
+  - id: saxo-algo-order-fix-tags
+    title: Algo order FIX tags
+    publisher: Saxo Bank
+    url: https://www.developer.saxo/fix/message-definitions/algo-order-fix-tags
+    kind: html
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Developer-portal page: 847 codes (1002 With Volume, 1003 Implementation Shortfall), AlgoEndTime 12104.
+  - id: cqg-algo-engine-support
+    title: CQG Algo-engine support
+    publisher: CQG
+    url: https://help.cqg.com/apihelp/Documents/algoenginesupport.htm
+    kind: html
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      FIX algo ids 1000-1006 per search snippet.
+  - id: goldman-ria-custody-fix-specs
+    title: Goldman Sachs fix specs (RIA custody)
+    publisher: Goldman Sachs
+    url: https://developer.gs.com/docs/services/ria-custody/fix-specs
+    kind: html
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Lists SOR/VWAP/TWAP strategies, tag 8031 required. Points to a separate GSET FIX spec (not located).
+  - id: fixsim-algo-tickets
+    title: FIXSIM Algo Tickets user guide
+    publisher: FIXSIM
+    url: https://www.fixsim.com/userguide/algotickets
+    kind: html
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Vendor guide to loading broker FIXatdl 1.0/1.1; context only, not a spec source.
+  - id: fix-trading-fixatdl-technical-spec
+    title: FIXatdl Technical Specification
+    publisher: FIX Trading Community
+    url: https://archive.fixtrading.org/?p=62020
+    kind: html
+    found: 2026-11-04
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      FIXatdl 1.1 spec/XSD/sample downloads; 1.2 RC1 dated 2021-05-20. See STATUS item 6 on licence.
