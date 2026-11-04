@@ -8,10 +8,14 @@ license = { text = "Proprietary" }
 dependencies = [
   "lxml>=5.2",
   "pydantic>=2.7",
+  "pypdf>=6.21.4",
 ]
 
 [project.scripts]
 concord = "concord.cli:main"
+
+[project.optional-dependencies]
+llm = ["anthropic>=0.40"]  # MIT; only needed for live extraction
 
 [dependency-groups]
 dev = [

@@ -7,8 +7,12 @@ import json
 import sys
 from pathlib import Path
 
+from concord.diff import diff_specs
+from concord.extract import AnthropicBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
-from concord.ir import AlgoSpec
+from concord.ir import AlgoSpec, SourceDocument
+from concord.pdf import read_pdf
+from concord.verify import verify_spec
 
 
 def _load(path: str) -> AlgoSpec:
@@ -59,6 +63,32 @@ def main(argv: list[str] | None = None) -> int:
     c = sub.add_parser("convert", help="convert between FIXatdl and IR JSON")
     c.add_argument("file")
     c.add_argument("--to", choices=["json", "fixatdl"], required=True)
+    d = sub.add_parser("diff", help="classify the changes between two specs")
+    d.add_argument("old")
+    d.add_argument("new")
+    d.add_argument("--format", choices=["text", "json"], default="text")
+    d.add_argument(
+        "--fail-on-breaking", action="store_true", help="exit 2 if any breaking change is found"
+    )
+    v = sub.add_parser("verify", help="check every citation quote appears on its cited PDF page")
+    v.add_argument("spec")
+    v.add_argument(
+        "--source",
+        action="append",
+        default=[],
+        metavar="ID=PDF",
+        help="map a source id to its PDF (repeatable)",
+    )
+    v.add_argument("--format", choices=["text", "json"], default="text")
+    x = sub.add_parser("extract", help="extract an AlgoSpec from a PDF (LLM; citations verified)")
+    x.add_argument("pdf")
+    x.add_argument("--id", required=True, help="source id used in citations")
+    x.add_argument("--title", required=True)
+    x.add_argument("--url", help="public URL the PDF was published at")
+    x.add_argument("--provider")
+    x.add_argument("--out", required=True, help="where to write the IR JSON")
+    x.add_argument("--review-out", help="where to write the review list (JSON)")
+    x.add_argument("--replay", metavar="DIR", help="use recorded page-N.json responses, no API")
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
 
@@ -67,13 +97,41 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(AlgoSpec.model_json_schema(), indent=2))
         elif args.cmd == "inspect":
             print(_inspect(_load(args.file)))
+        elif args.cmd == "diff":
+            report = diff_specs(_load(args.old), _load(args.new))
+            print(report.to_json() if args.format == "json" else report.to_text())
+            if args.fail_on_breaking and report.has_breaking:
+                return 2
+        elif args.cmd == "verify":
+            docs = {}
+            for item in args.source:
+                sid, sep, path = item.partition("=")
+                if not sep or not sid or not path:
+                    raise ValueError(f"--source {item!r}: expected ID=PDF_PATH")
+                docs[sid] = read_pdf(path)
+            vr = verify_spec(_load(args.spec), docs)
+            print(vr.to_json() if args.format == "json" else vr.to_text())
+            if not vr.ok:
+                return 2
+        elif args.cmd == "extract":
+            backend = ReplayBackend(args.replay) if args.replay else AnthropicBackend()
+            src = SourceDocument(id=args.id, title=args.title, kind="pdf", url=args.url)
+            res = extract_spec(read_pdf(args.pdf), src, backend, provider=args.provider)
+            Path(args.out).write_text(res.spec.model_dump_json(indent=2, exclude_none=True))
+            if args.review_out:
+                Path(args.review_out).write_text(
+                    json.dumps([r.to_dict() for r in res.review], indent=2)
+                )
+            print(res.review_text())
+            if res.review:
+                return 2
         elif args.cmd == "convert":
             spec = _load(args.file)
             if args.to == "json":
                 print(spec.model_dump_json(indent=2, exclude_none=True))
             else:
                 sys.stdout.buffer.write(write_fixatdl(spec))
-    except (FixatdlError, ValueError, OSError) as exc:
+    except (FixatdlError, ValueError, OSError, RuntimeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     return 0
