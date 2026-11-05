@@ -6,11 +6,10 @@
 
 ## Last run
 
-**2026-11-04 — agents + auto-merge (owner request).** Added
-`.claude/agents/product-manager.md` (Opus 5.5) and `.claude/agents/worker.md`
-(Sonnet 5.5). Runs now plan → build → commit → merge (D12). Merged the backlog
-of five runs to `main`. CI now runs by manual trigger before each merge (D13). Earlier today: catalogued 10 public algo-spec
-candidates (backlog item 8, 10 of 25).
+**2026-11-05 — static spec site.** PM refreshed the backlog and research notes
+(`docs/research/`), catalogued 6 more public sources (16 of 25). Worker built
+`concord site SPEC OUT_DIR` (`concord.site`): escaped, deterministic static HTML
+with citation links and `uncited` markers (backlog item 6). 85 tests pass.
 
 ## Needs owner
 
@@ -26,7 +25,15 @@ PR or edit this file.
 3. **Widen the environment's network access** so runs can fetch public spec
    PDFs. Today it allows GitHub, package registries and search only.
    *Recommended:* add specific domains as the corpus catalogue finds them,
-   rather than opening everything. *Blocks:* backlog item 8 beyond cataloguing.
+   rather than opening everything. *Recommended one-word answer:* **Yes**. That
+   means allowlisting these publisher domains from `corpus/sources.yaml`:
+   `nyse.com`, `www.nyse.com`, `www.cqg.com`, `help.cqg.com`, `www.sc.com`,
+   `www.developer.saxo`, `www.home.saxo`, `developer.gs.com`, `business.bofa.com`,
+   `nasdaq.com`, `www.nasdaq.com`, `cdn.cboe.com`, `library.tradingtechnologies.com`,
+   `prerak-proof.github.io`, plus `archive.fixtrading.org`, `cdnws.fixtrading.org`
+   and `www.globaltrading.net` for research (confirmed blocked 2026-11-05).
+   *Blocks:* backlog item 13 (corpus terms review), and with it any real-spec
+   extraction test.
 4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
    spend on live extraction (budget roughly $10–25 per spec converted).
    *Blocks:* backlog item 5 live runs only — everything else proceeds.

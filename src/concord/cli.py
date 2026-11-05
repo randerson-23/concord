@@ -12,6 +12,7 @@ from concord.extract import AnthropicBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
 from concord.ir import AlgoSpec, SourceDocument
 from concord.pdf import read_pdf
+from concord.site import write_site
 from concord.verify import verify_spec
 
 
@@ -89,6 +90,9 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("--out", required=True, help="where to write the IR JSON")
     x.add_argument("--review-out", help="where to write the review list (JSON)")
     x.add_argument("--replay", metavar="DIR", help="use recorded page-N.json responses, no API")
+    st = sub.add_parser("site", help="render a spec as a static HTML site")
+    st.add_argument("spec")
+    st.add_argument("out_dir")
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
 
@@ -125,6 +129,9 @@ def main(argv: list[str] | None = None) -> int:
             print(res.review_text())
             if res.review:
                 return 2
+        elif args.cmd == "site":
+            files = write_site(_load(args.spec), args.out_dir)
+            print(f"wrote {len(files)} files to {args.out_dir}")
         elif args.cmd == "convert":
             spec = _load(args.file)
             if args.to == "json":

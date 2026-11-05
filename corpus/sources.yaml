@@ -1,7 +1,7 @@
 # Manifest of public documents used for development and testing.
 # Rules and entry format: corpus/README.md
 # Documents are fetched into corpus/cache/ (git-ignored); never commit them.
-# Entries below are CATALOGUED ONLY (found by web search 2026-11-04). None fetched;
+# Entries below are CATALOGUED ONLY (found by web search 2026-11-04 and 2026-11-05). None fetched;
 # publisher terms NOT yet reviewed, so do not use for development until `terms` is filled.
 
 sources:
@@ -115,3 +115,75 @@ sources:
     license: null
     notes: >-
       FIXatdl 1.1 spec/XSD/sample downloads; 1.2 RC1 dated 2021-05-20. See STATUS item 6 on licence.
+  # Added 2026-11-05 by the PM run (web search only; none fetched; terms not reviewed).
+  - id: bofa-electronic-trading-guide
+    title: Electronic Trading Guide
+    publisher: Bank of America
+    url: https://business.bofa.com/content/dam/boamlimages/documents/PDFs/electronic_trading_guide.pdf
+    kind: pdf
+    found: 2026-11-05
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Algo suite overview (VWAP, TWAP, POV, IS, participation controls) per search snippet. Check for FIX tags.
+  - id: nasdaq-nordic-execution-algorithms-factsheet
+    title: Nordic Execution Algorithms Factsheet
+    publisher: Nasdaq
+    url: https://nasdaq.com/docs/2023/12/08/Nordic-Execution-Algorithms-Factsheet.pdf
+    kind: pdf
+    found: 2026-11-05
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Venue-provided execution algos; factsheet, likely light on FIX detail. Dated 2023-12 by URL.
+  - id: saxotraderpro-algoguide
+    title: SaxoTraderPRO Algo Guide
+    publisher: Saxo Bank
+    url: https://www.home.saxo/-/media/documents/saxotraderpro/saxotraderpro-algoguide
+    kind: pdf
+    found: 2026-11-05
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Trader-facing companion to saxo-algo-order-fix-tags; pairing the two gives prose + wire tags for one broker.
+  - id: tt-fix-strategy-parameters-grp
+    title: TT FIX General - Group StrategyParametersGrp / TargetStrategyBlock
+    publisher: Trading Technologies
+    url: https://library.tradingtechnologies.com/tt-fix/general/Group_StrategyParametersGrp.html
+    kind: html
+    found: 2026-11-05
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Algo params via StrategyParameters group (957-960); TargetStrategyBlock page at
+      https://library.tradingtechnologies.com/tt-fix/general/TargetStrategyBlock_ttpo.html.
+      Exercises the repeating-group encoding rather than flat custom tags.
+  - id: cboe-titanium-us-equities-fix
+    title: Cboe Titanium U.S. Equities FIX Specification
+    publisher: Cboe Global Markets
+    url: https://cdn.cboe.com/resources/techspec/technical-specifications-cboe-titanium-u-s-equities-fix-specification.pdf
+    kind: pdf
+    found: 2026-11-05
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Full venue RoE, FIX 4.2 subset, v2.9.57 dated 2026-08-04 per search. Not algo; Orchestra-phase test doc.
+      Also published as Markdown at the same path with .md, which may be easier to cite.
+  - id: nasdaq-nordic-fix-order-entry
+    title: Nasdaq Nordic FIX Order Entry v2.02.3
+    publisher: Nasdaq
+    url: https://www.nasdaq.com/docs/2026/06/03/Nasdaq-Nordic---FIX-Order-Entry-v.2.02.3.pdf
+    kind: pdf
+    found: 2026-11-05
+    terms: >-
+      Not reviewed (network policy blocked fetching). Published openly per search result.
+    license: null
+    notes: >-
+      Venue RoE; prior version v2.02.2 (2026-02-24) also public at
+      https://www.nasdaq.com/docs/2026/02/24/Nasdaq-Nordic---FIX-Order-Entry-v.2.02.2.pdf - a real
+      version pair for the diff engine once extraction runs.
