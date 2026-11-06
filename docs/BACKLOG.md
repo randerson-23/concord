@@ -92,40 +92,54 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
    Done: `concord.site` (`render_site`, `write_site`) and `concord site SPEC OUT_DIR`;
    `tests/test_site.py`. Only http(s) source URLs become links. Follow-ups: item 8
    (cxl/rpl badge), item 12 (library index); add a nav link between strategies.
-7. `todo` **Diff: match strategies by wire value when names change.** A
+7. `done 2026-11-06` **Diff: match strategies by wire value when names change.** A
    removed+added strategy pair with the same `wire_value` is reported as a rename.
    The rename is cosmetic. Changes inside it are diffed as usual. This follows the
    D9 parameter rule, so it extends D9 and does not reverse it. Record it as a
-   D9 addendum in DECISIONS.
-   Acceptance: tests in `tests/test_diff.py` for a rename alone (cosmetic only), a
-   rename plus a removed parameter (breaking, reported under the new name) and an
-   ambiguous match where two removed strategies share a wire value (no match,
-   reported as removed/added).
+   D9 addendum in DECISIONS. Why first: diff is the paid feature, and public specs
+   show wire values are the stable identity while names and labels drift
+   (`docs/research/customer-signal.md`, 2026-11-06).
+   Acceptance:
+   - Tests in `tests/test_diff.py`: rename alone (cosmetic only, text report reads
+     `renamed 'Old' -> 'New' (wire value 1001)`); rename plus a removed parameter
+     (breaking, reported under the new name); two removed strategies sharing a
+     wire value (no match, reported as removed/added); JSON output carries the
+     old and new names.
+   - CLI test: `concord diff old.json new.json --fail-on-breaking` exits 0 for a
+     rename alone and 2 for rename plus removed parameter.
 8. `todo` **Site: mark parameters that are not mutable on cancel/replace.** Show a
    badge wherever `mutable_on_cxl_rpl is False`, and add a "cannot amend" summary
    on each strategy page. Customer signal says custom tags breaking cxl/rpl is a
-   recurring OMS failure (`docs/research/customer-signal.md`).
+   recurring OMS failure (`docs/research/customer-signal.md`). Also add prev/next
+   and index navigation links between strategy pages (item 6 follow-up).
    Acceptance: a site test with one immutable parameter checks the badge and the
-   summary line. (`concord diff` already flags mutability changes.)
-9. `todo` **FIX Orchestra writer, order-entry slice.** IR → Orchestra repository XML:
-   NewOrderSingle plus the strategy identifier field and one field per algo
-   parameter (custom tags as user-defined fields, enums as codeSets). Follow the
-   draft *Recommended Practices: Onboarding with FIX Orchestra*
-   (<https://forum.fixtrading.org/t/public-comment-period-fix-recommended-practices-onboarding-with-fix-orchestra/17170>).
-   Acceptance: `concord convert spec.json out.xml --to orchestra`; the writer is
-   deterministic (byte-identical test); structural tests use lxml XPath on the
-   fixture output. Schema validation is opt-in through `CONCORD_ORCHESTRA_XSD_DIR`
-   (skipped when unset), matching the FIXatdl pattern. Fetching the XSD from
-   `FIXTradingCommunity/fix-orchestra` may hit the same scope block as item 2. If it
-   does, ship with the opt-in test and do not vendor the XSD. D7 allows vendoring,
-   but only once the XSD can be fetched.
+   summary line; a test checks each strategy page links back to `index.html`;
+   determinism test still passes.
 10. `todo` **IR: parameter encoding.** Add a `wire_encoding` field to the strategy
     or spec, with values `tag` / `848-pairs` / `957-group`. Public specs use all
     three (TT uses 957–960, the FIX 4.4 extension uses 848, most use flat custom
     tags; see `docs/research/customer-signal.md`). This adds a field without
     changing any meaning, so no IR_VERSION bump. The FIXatdl reader sets `tag`.
+    Moved ahead of item 9 because the Orchestra writer must know the encoding.
     Acceptance: round-trip test, diff classifies an encoding change as breaking,
-    and `concord schema` shows the field.
+    site shows the encoding, and `concord schema` shows the field.
+9a. `todo` **FIX Orchestra writer, fields and codeSets.** `concord.orchestra`
+    writes an Orchestra repository with one field per algo parameter (custom
+    tags as user-defined fields) and one codeSet per enum, plus the strategy
+    identifier field with a codeSet of strategy wire values. Follow the draft
+    *Recommended Practices: Onboarding with FIX Orchestra*
+    (<https://forum.fixtrading.org/t/public-comment-period-fix-recommended-practices-onboarding-with-fix-orchestra/17170>).
+    Acceptance: deterministic (byte-identical test); lxml XPath tests on the
+    `example_broker.xml` fixture output for field ids, types and codes. No CLI yet.
+9b. `todo` **FIX Orchestra writer, NewOrderSingle and CLI.** Add a NewOrderSingle
+    message referencing the fields from 9a (encoding-aware per item 10), and
+    `concord convert spec.json out.xml --to orchestra`. Schema validation is opt-in
+    through `CONCORD_ORCHESTRA_XSD_DIR` (skipped when unset), matching the FIXatdl
+    pattern. Fetching the XSD from `FIXTradingCommunity/fix-orchestra` may hit the
+    same scope block as item 2. If it does, ship with the opt-in test and do not
+    vendor the XSD. D7 allows vendoring, but only once the XSD can be fetched.
+    Acceptance: CLI test writes the file and exits 0; XPath test for the message
+    members; determinism test.
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.
@@ -133,6 +147,11 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     top-level index of providers and strategies across specs. It also takes
     `--diff OLD` to add a rendered change report page. This builds on item 6.
     Acceptance: multi-spec test plus determinism test.
+19. `todo` **Diff: citation (provenance) drift.** Report a fact whose citation
+    page or quote changed while its value did not, as *cosmetic* with a
+    `provenance` note, so reviewers see when a re-extraction moved evidence
+    (item 1 follow-up). Acceptance: tests for a moved page and a changed quote;
+    text and JSON output both show it.
 
 ## Phase A — research `[safe]`
 
@@ -140,8 +159,8 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `corpus/sources.yaml` entry, fetch the document into `corpus/cache/`, record
     the publisher's stated terms and check whether it carries FIX wire tags.
     Acceptance: every entry has `terms` filled in, with no "Not reviewed" left.
-14. `todo` `[safe]` **Public algo spec catalogue** (16 of 25 catalogued: 10 on
-    2026-11-04, 6 on 2026-11-05). Find more openly published broker/venue algo
+14. `todo` `[safe]` **Public algo spec catalogue** (18 of 25 catalogued: 10 on
+    2026-11-04, 6 on 2026-11-05, 2 on 2026-11-06). Find more openly published broker/venue algo
     specs and record each in `corpus/sources.yaml`. Prefer documents that carry
     FIX wire tags; prose-only factsheets are weak test material.
     Acceptance: 25 entries and the YAML still parses.

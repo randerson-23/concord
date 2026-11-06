@@ -68,6 +68,12 @@ unchanged; the client may still send its own value). A new or changed rule
 unrestricted unless the spec lists included items of that kind. Any of these
 may be proposed for change under *Needs owner* if they read wrong in practice.
 
+**D9 addendum · 2026-11-06 · Strategy rename by wire value.** A removed+added
+strategy pair sharing a non-empty `wire_value` is a cosmetic `strategy_renamed`;
+the pair is diffed as usual and reported under the new name. Matching only
+happens when exactly one removed and one added strategy carry that wire value;
+otherwise they are reported as removed/added.
+
 ## D10 · 2026-11-03 · Citation verification is exact after folding
 
 Quotes are compared case-sensitively against the cited page's text after NFKC,
