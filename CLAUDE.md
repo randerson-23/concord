@@ -41,84 +41,86 @@ require breaking one, stop that task and record it under *Needs owner* in
 
 ## Daily run procedure
 
-Automated sessions fire on weekday mornings. Each one follows these steps.
+Two long-lived sessions do the work, each woken by its own scheduled task and
+each visible as its own session in the Claude app (D14):
 
-### 1. Sync
+| Session | Model | Fires (US Central) | Role |
+|---|---|---|---|
+| **Concord PM** | Opus 5.5 | daily 05:07 | Research and roadmap — `.claude/agents/product-manager.md` |
+| **Concord Worker** | Sonnet 5.5 | daily 05:37 | Build, verify, ship — `.claude/agents/worker.md` |
 
-```sh
-git fetch origin
-git checkout dev 2>/dev/null || git checkout -b dev origin/main
-git merge --no-edit origin/main          # pick up anything the owner merged
-uv sync
-```
+The PM runs first, so the Worker builds from a fresh plan. The two never edit
+the same files on the same morning: the PM owns `docs/BACKLOG.md` ordering,
+`docs/research/` and `corpus/sources.yaml`; the Worker owns code, tests and
+the `done` markings. Both may add to *Needs owner* in `docs/STATUS.md`.
 
-If `origin/dev` exists and is ahead of your local `dev`, pull it first.
+These sessions persist between firings, but their containers may be rebuilt
+at any time. Never rely on local state surviving: push everything before a
+firing ends, and re-sync at the start of every firing.
 
-### 2. Orient
+### Every firing, both sessions
 
-Read `docs/STATUS.md`, `docs/BACKLOG.md` and `docs/DECISIONS.md`. Check
-whether the owner left answers under *Needs owner* in STATUS — act on them
-first and move them to the decision log if they are decisions.
+1. **Sync.**
 
-### 3. Plan — `product-manager` agent (Opus 5.5)
+   ```sh
+   git fetch origin
+   git checkout -B dev origin/dev 2>/dev/null || git checkout -B dev origin/main
+   git merge --no-edit origin/main          # pick up anything merged since
+   uv sync
+   ```
 
-Spawn the `product-manager` subagent (`.claude/agents/product-manager.md`).
-It researches (competitors, public corpus, customer signal) and rewrites
-`docs/BACKLOG.md` so the top `todo` item is the most valuable thing to finish
-today. Skip this step only if the PM already ran today.
+2. **Orient.** Read `docs/STATUS.md`, `docs/BACKLOG.md` and
+   `docs/DECISIONS.md`. If the owner left answers under *Needs owner*, act on
+   them first and move decisions to the decision log.
+3. **Do your role** — below.
+4. **Push.** Commit with a subject starting `pm: ` or `run: ` plus the date,
+   e.g. `run: 2026-11-07 add Orchestra writer`. Run the full check (rule 4),
+   then push `dev`. If the push is rejected as non-fast-forward (the other
+   session pushed meanwhile), `git pull --rebase origin dev`, re-run the
+   checks, and push again. Never force-push.
+5. **Report.** End with three lines at most: what you did, whether checks
+   passed, and whether anything now needs the owner. If something needs the
+   owner, say so in the first line — it becomes the push notification.
 
-The review gate (hold mode after 5 unreviewed runs) is suspended while D12
-auto-merge is in force, because nothing waits for review.
+### Concord PM
 
-### 4. Build — `worker` agent (Sonnet 5.5)
+Follow `.claude/agents/product-manager.md`: research, then rewrite
+`docs/BACKLOG.md` so the top `todo` item is the single most valuable thing the
+Worker can finish in one firing. You write no product code. Commit and push
+your changes to `dev` (step 4); you do not merge — the Worker does.
 
-Spawn the `worker` subagent (`.claude/agents/worker.md`) to take the highest
-unblocked `todo` item. It splits items that are too big and finishes what it
-starts: a run that leaves the build red, or a half-built feature with no
-tests, is worse than a run that did less. Check its work (diff and checks)
-before committing — the orchestrating session owns the commit.
+### Concord Worker
 
-### 5. Verify
+Follow `.claude/agents/worker.md`: take the highest unblocked `todo` item and
+finish it with tests. Split anything too big and do the first part. A firing
+that leaves the build red, or a half-built feature with no tests, is worse
+than one that did less.
 
-Run the full check (rule 4). If schema tests matter for your change, fetch the
-FIXatdl XSDs into a scratch directory and run with `CONCORD_FIXATDL_XSD_DIR`
-set — see `tests/conftest.py`.
+Then record and ship:
 
-### 6. Record
-
-- `docs/BACKLOG.md`: mark the item `done` with the date; add follow-ups you
-  discovered, in priority order.
+- `docs/BACKLOG.md`: mark the item `done YYYY-MM-DD` with follow-ups.
 - `docs/STATUS.md`: replace *Last run* with today's summary; update *Needs
   owner* (each entry: the question, your recommended answer, what it blocks).
-- `docs/DECISIONS.md`: add an entry for any technical decision a future session
-  would otherwise re-litigate.
+- `docs/DECISIONS.md`: add an entry for any technical decision a future
+  session would otherwise re-litigate.
+- Push `dev` (step 4). Make sure exactly one open pull request from `dev` into
+  `main` exists — create it if not — and describe the run(s) it carries.
+- Per D12, merge it with a **merge commit** once local checks and CI are
+  green. Pushes and merges made by sessions do not trigger GitHub Actions
+  (D13), so trigger `ci.yml` with `workflow_dispatch` on ref `dev` (GitHub MCP
+  `actions_run_trigger`, method `run_workflow`), wait for that run to finish on
+  your pushed HEAD, and merge only if it succeeded. Confirm the PR's head SHA
+  equals your local `dev` HEAD and pass it as the expected SHA. If CI is red,
+  do not merge: fix it on `dev` or record it under *Needs owner*.
 
-### 7. Commit and push
+If GitHub API tools are unavailable, `git push` still works and an open PR
+picks up the commits on its own. Skip the PR and CI steps, and add *"Merge
+`dev` into `main`"* under *Needs owner* in STATUS.
 
-Make your final commit's subject start with `run: ` and the date, e.g.
-`run: 2026-11-03 add spec diff engine`. Push `dev`. Make sure exactly one open
-pull request from `dev` into `main` exists — create it if not — and write its
-description as a summary of the run(s) it carries. Then, per D12, merge it
-with a **merge commit** once local checks and CI are green. If CI is red, do
-not merge: fix it on `dev` or record it under *Needs owner*.
+### Verifying schema output
 
-Pushes and merges made by these sessions do **not** trigger GitHub Actions
-(D13). Start CI yourself: trigger `ci.yml` with `workflow_dispatch` on ref
-`dev` (GitHub MCP `actions_run_trigger`, method `run_workflow`), wait for that
-run to complete on your pushed `dev` HEAD, and merge only if it succeeded.
-Pass the PR's head SHA as the expected SHA when merging, and confirm it
-equals your local `dev` HEAD first.
-
-If GitHub API tools are not available in your session, `git push` still
-works, and an existing PR picks up the new commits on its own. Skip the PR
-step, and if no PR exists yet, add *"Open a PR from `dev` into `main`"* under
-*Needs owner* in STATUS. The pushed commits are what matter; the PR
-description is a convenience.
-
-### 8. Report
-
-End with three lines at most: what you did, whether checks passed, and
-whether anything now needs the owner. This becomes the push notification.
+If schema tests matter for a change, fetch the FIXatdl XSDs into a scratch
+directory and run with `CONCORD_FIXATDL_XSD_DIR` set — see `tests/conftest.py`.
 
 ## Architecture
 

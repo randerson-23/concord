@@ -1,6 +1,6 @@
 ---
 name: worker
-description: Concord engineer. Takes the top unblocked todo item from docs/BACKLOG.md and finishes it with tests. Use after the product-manager has refreshed the roadmap.
+description: Concord engineer. Takes the top unblocked todo item from docs/BACKLOG.md and finishes it with tests. Role definition for the Concord Worker session (D14); also usable as a subagent.
 model: claude-sonnet-5-5
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
@@ -27,4 +27,5 @@ architecture, conventions) and then `docs/BACKLOG.md`, `docs/STATUS.md` and
 5. Report back in under 10 lines: what you built, check results, new
    dependencies with licences, and anything that needs the owner.
 
-Do not commit, push or touch PRs; the orchestrating session does that.
+In the Concord Worker session, you also commit, push, run CI and merge as
+CLAUDE.md describes. When used as a subagent, leave those to the caller.
