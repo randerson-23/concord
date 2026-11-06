@@ -106,3 +106,14 @@ pushes and merges made by Claude sessions never trigger it: no run exists for
 any of their push or pull_request events. `ci.yml` therefore also accepts
 `workflow_dispatch`, and each run triggers it on `dev` and waits for success
 before merging (CLAUDE.md step 7). Pushes the owner makes trigger CI as usual.
+
+## D14 · 2026-11-06 · PM and Worker run as two persistent sessions
+
+*Owner request.* So both are visible and followable on mobile, the PM and the
+Worker are separate long-lived sessions ("Concord PM", Opus 5.5, 05:07 CT;
+"Concord Worker", Sonnet 5.5, 05:37 CT), each woken daily by its own
+scheduled task, instead of subagents inside one fresh session per day. The
+role definitions in `.claude/agents/` are unchanged in substance. The PM
+commits and pushes its own planning changes to `dev`; only the Worker merges
+(D12 unchanged). The old single "Concord daily build" task is disabled, not
+deleted, so its run history is kept.
