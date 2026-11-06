@@ -45,3 +45,14 @@ press on multi-month algo onboarding turned up (search on 2026-11-05).
   <https://apply.workable.com/bestex-research/jobs/view/3E161F6EC4.md> ·
   <https://careers.flextrade.com/o/fix-analyst-client-onboarding-2?lang=en>
   These are good first conversations for the Team tier.
+
+## 2026-11-06
+
+- **TargetStrategy(847) values are not portable.** Coinbase Prime uses letter codes
+  (`T` = TWAP, `V` = VWAP), Saxo uses its own numbers (`1014` = TWAP) and Proof uses
+  `1001`/`1002`, although FIX 4.4 defines 847 as an integer with 1000+ left to users.
+  <https://docs.cdp.coinbase.com/prime/fix-api/order-entry-messages> ·
+  <https://www.developer.saxo/fix/message-definitions/algo-order-fix-tags> ·
+  <https://forum.fixtrading.org/t/targetstrategy-field-in-4-4/1633>
+  *Product:* storing wire values as strings (D6) is right. Strategy wire value is the
+  stable identity across versions, which supports diff matching by wire value (item 7).

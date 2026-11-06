@@ -6,10 +6,11 @@
 
 ## Last run
 
-**2026-11-05 — static spec site.** PM refreshed the backlog and research notes
-(`docs/research/`), catalogued 6 more public sources (16 of 25). Worker built
-`concord site SPEC OUT_DIR` (`concord.site`): escaped, deterministic static HTML
-with citation links and `uncited` markers (backlog item 6). 85 tests pass.
+**2026-11-06 — diff rename matching.** PM re-ordered the backlog (wire_encoding
+before the Orchestra writer; item 9 split), catalogued 2 more public sources
+(18 of 25). Worker made `concord diff` match strategies by wire value and report
+a cosmetic `strategy_renamed` (D9 addendum); ambiguous wire values stay
+removed/added. Tests pass.
 
 ## Needs owner
 

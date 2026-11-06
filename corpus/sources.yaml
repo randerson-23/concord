@@ -187,3 +187,28 @@ sources:
       Venue RoE; prior version v2.02.2 (2026-02-24) also public at
       https://www.nasdaq.com/docs/2026/02/24/Nasdaq-Nordic---FIX-Order-Entry-v.2.02.2.pdf - a real
       version pair for the diff engine once extraction runs.
+  - id: coinbase-prime-fix-order-entry
+    title: Coinbase Prime FIX API - Order Entry Messages
+    publisher: Coinbase
+    url: https://docs.cdp.coinbase.com/prime/fix-api/order-entry-messages
+    kind: html
+    found: 2026-11-06
+    terms: >-
+      Not reviewed (not fetched). Published openly on the publisher's developer docs site.
+    license: null
+    notes: >-
+      FIX 4.2 base with custom tags. TargetStrategy(847) uses letter codes (T = TWAP, V = VWAP);
+      TWAP/VWAP require EffectiveTime(168) plus ExpireTime(126) or ParticipationRate(849) per search
+      snippet. Crypto venue: short-cycle publisher segment (business plan section 8).
+  - id: quod-quantreplay-fix-roe
+    title: QuantReplay FIX Rules of Engagement
+    publisher: Quod Financial
+    url: https://quod-financial.github.io/quantreplay/FIXRulesOfEngagement/FIXRulesOfEngagement.pdf
+    kind: pdf
+    found: 2026-11-06
+    terms: >-
+      Not reviewed (not fetched). Published on the publisher's GitHub Pages site for its
+      open-source market simulator; check the repo license before use.
+    license: null
+    notes: >-
+      Simulator venue RoE, not an algo spec. Orchestra-phase test doc.

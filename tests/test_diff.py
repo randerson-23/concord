@@ -266,3 +266,60 @@ def test_cli_diff(tmp_path, capsys):
     assert main(["diff", str(a), str(b), "--fail-on-breaking", "--format", "json"]) == 2
     assert json.loads(capsys.readouterr().out)["summary"]["breaking"] == 1
     assert main(["diff", str(a), str(a), "--fail-on-breaking"]) == 0
+
+
+def _rename_vwap(s: AlgoSpec) -> None:
+    s.strategies[0].name = "VWAP2"
+
+
+def test_strategy_rename_by_wire_value_is_cosmetic():
+    r = diff_specs(base(), mutate(_rename_vwap))
+    assert [(c.kind, c.severity) for c in r.changes] == [("strategy_renamed", "cosmetic")]
+    c = r.changes[0]
+    assert c.message == "renamed 'VWAP' -> 'VWAP2' (wire value VWAP)"
+    assert (c.old, c.new) == ("VWAP", "VWAP2")
+    data = json.loads(r.to_json())["changes"][0]
+    assert (data["old"], data["new"]) == ("VWAP", "VWAP2")
+
+
+def test_strategy_rename_plus_removed_parameter_reports_under_new_name():
+    def fn(s: AlgoSpec) -> None:
+        _rename_vwap(s)
+        s.strategies[0].parameters.pop()  # Note
+
+    r = diff_specs(base(), mutate(fn))
+    assert kinds(base(), mutate(fn)) == {
+        "strategy_renamed": "cosmetic",
+        "parameter_removed": "breaking",
+    }
+    removed = next(c for c in r.changes if c.kind == "parameter_removed")
+    assert removed.path == "Strategy[@name='VWAP2']/Parameter[@name='Note']"
+
+
+def test_strategies_sharing_wire_value_are_not_matched():
+    # The IR forbids duplicate wire values, so build the ambiguous specs unvalidated.
+    old = AlgoSpec.model_construct(
+        provider="Acme",
+        strategies=[
+            Strategy(name="A", wire_value="W"),
+            Strategy(name="B", wire_value="W"),
+        ],
+    )
+    new = AlgoSpec.model_construct(provider="Acme", strategies=[Strategy(name="C", wire_value="W")])
+    r = diff_specs(old, new)
+    assert sorted(c.kind for c in r.changes) == [
+        "strategy_added",
+        "strategy_removed",
+        "strategy_removed",
+    ]
+
+
+def test_cli_fail_on_breaking_for_strategy_rename(tmp_path):
+    a, b, c = (tmp_path / f"{n}.json" for n in "abc")
+    a.write_text(base().model_dump_json())
+    b.write_text(mutate(_rename_vwap).model_dump_json())
+    c.write_text(
+        mutate(lambda s: (_rename_vwap(s), s.strategies[0].parameters.pop())).model_dump_json()
+    )
+    assert main(["diff", str(a), str(b), "--fail-on-breaking"]) == 0
+    assert main(["diff", str(a), str(c), "--fail-on-breaking"]) == 2

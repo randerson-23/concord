@@ -89,11 +89,36 @@ def diff_specs(old: AlgoSpec, new: AlgoSpec) -> DiffReport:
 
     old_s = {s.name: s for s in old.strategies}
     new_s = {s.name: s for s in new.strategies}
-    for name in sorted(old_s.keys() - new_s.keys()):
+    gone, fresh = old_s.keys() - new_s.keys(), new_s.keys() - old_s.keys()
+    # A strategy that changed name but kept its wire value is the same strategy.
+    # Only an unambiguous pair counts: a wire value shared by several removed or
+    # several added strategies is not matched.
+    renamed_s: dict[str, str] = {}
+    for rn in sorted(gone):
+        wv = old_s[rn].wire_value
+        if wv is None:
+            continue
+        gs = [g for g in gone if old_s[g].wire_value == wv]
+        fs = [f for f in fresh if new_s[f].wire_value == wv]
+        if len(gs) == 1 and len(fs) == 1:
+            renamed_s[rn] = fs[0]
+    gone -= renamed_s.keys()
+    fresh -= set(renamed_s.values())
+    for rn, an in sorted(renamed_s.items()):
+        add(
+            "cosmetic",
+            _spath(an),
+            "strategy_renamed",
+            f"renamed {rn!r} -> {an!r} (wire value {old_s[rn].wire_value})",
+            rn,
+            an,
+        )
+        _diff_strategy(old_s[rn], new_s[an], add, scalar, sname=an)
+    for name in sorted(gone):
         add(
             "breaking", _spath(name), "strategy_removed", "strategy removed", old_s[name].wire_value
         )
-    for name in sorted(new_s.keys() - old_s.keys()):
+    for name in sorted(fresh):
         add(
             "additive",
             _spath(name),
@@ -124,8 +149,9 @@ def _ppath(strategy: str, param: str) -> str:
     return f"{_spath(strategy)}/Parameter[@name='{param}']"
 
 
-def _diff_strategy(o: Strategy, n: Strategy, add, scalar) -> None:
-    path = _spath(o.name)
+def _diff_strategy(o: Strategy, n: Strategy, add, scalar, sname: str | None = None) -> None:
+    sname = sname or o.name
+    path = _spath(sname)
     scalar("breaking", path, "wire_value", o.wire_value, n.wire_value)
     scalar("breaking", path, "fix_msg_type", o.fix_msg_type, n.fix_msg_type)
     scalar("breaking", path, "provider_id", o.provider_id, n.provider_id)
@@ -153,18 +179,18 @@ def _diff_strategy(o: Strategy, n: Strategy, add, scalar) -> None:
     for rn, an in sorted(renamed.items()):
         add(
             "cosmetic",
-            _ppath(o.name, rn),
+            _ppath(sname, rn),
             "parameter_renamed",
             f"renamed to {an!r} (tag unchanged)",
             rn,
             an,
         )
-        _diff_param(o.name, old_p[rn], new_p[an], add, scalar, label=an)
+        _diff_param(sname, old_p[rn], new_p[an], add, scalar, label=an)
     for name in sorted(removed - renamed.keys()):
         tag = old_p[name].fix_tag
         add(
             "breaking",
-            _ppath(o.name, name),
+            _ppath(sname, name),
             "parameter_removed",
             f"parameter removed (tag {tag})" if tag else "parameter removed",
             tag,
@@ -174,7 +200,7 @@ def _diff_strategy(o: Strategy, n: Strategy, add, scalar) -> None:
         if p.required:
             add(
                 "breaking",
-                _ppath(o.name, name),
+                _ppath(sname, name),
                 "parameter_added_required",
                 f"new required parameter (tag {p.fix_tag})",
                 None,
@@ -183,16 +209,16 @@ def _diff_strategy(o: Strategy, n: Strategy, add, scalar) -> None:
         else:
             add(
                 "additive",
-                _ppath(o.name, name),
+                _ppath(sname, name),
                 "parameter_added",
                 f"new optional parameter (tag {p.fix_tag})",
                 None,
                 p.fix_tag,
             )
     for name in sorted(old_p.keys() & new_p.keys()):
-        _diff_param(o.name, old_p[name], new_p[name], add, scalar)
+        _diff_param(sname, old_p[name], new_p[name], add, scalar)
 
-    _diff_edits(o, n, add)
+    _diff_edits(o, n, add, sname)
 
 
 def _diff_applicability(path: str, o: Applicability, n: Applicability, add) -> None:
@@ -341,8 +367,8 @@ def _diff_param(
     scalar("cosmetic", path, "description", o.description, n.description)
 
 
-def _diff_edits(o: Strategy, n: Strategy, add) -> None:
-    path = _spath(o.name)
+def _diff_edits(o: Strategy, n: Strategy, add, name: str) -> None:
+    path = _spath(name)
     oe = {se.edit.model_dump_json(exclude_none=True): se for se in o.edits}
     ne = {se.edit.model_dump_json(exclude_none=True): se for se in n.edits}
     for key in sorted(oe.keys() & ne.keys()):
