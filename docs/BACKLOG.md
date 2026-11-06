@@ -123,6 +123,9 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     Moved ahead of item 9 because the Orchestra writer must know the encoding.
     Acceptance: round-trip test, diff classifies an encoding change as breaking,
     site shows the encoding, and `concord schema` shows the field.
+    Note (research 2026-11-06): strategy identifiers also arrive as ExDestination(100)
+    or BrokerID(76). `strategy_identifier_tag` already covers these, so this item adds
+    nothing for them. Keep the fixture's identifier on 847.
 9a. `todo` **FIX Orchestra writer, fields and codeSets.** `concord.orchestra`
     writes an Orchestra repository with one field per algo parameter (custom
     tags as user-defined fields) and one codeSet per enum, plus the strategy
@@ -159,11 +162,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `corpus/sources.yaml` entry, fetch the document into `corpus/cache/`, record
     the publisher's stated terms and check whether it carries FIX wire tags.
     Acceptance: every entry has `terms` filled in, with no "Not reviewed" left.
-14. `todo` `[safe]` **Public algo spec catalogue** (18 of 25 catalogued: 10 on
-    2026-11-04, 6 on 2026-11-05, 2 on 2026-11-06). Find more openly published broker/venue algo
+14. `done 2026-11-06` `[safe]` **Public algo spec catalogue** (25 of 25 catalogued: 10 on
+    2026-11-04, 6 on 2026-11-05, 9 on 2026-11-06). Find more openly published broker/venue algo
     specs and record each in `corpus/sources.yaml`. Prefer documents that carry
     FIX wire tags; prose-only factsheets are weak test material.
     Acceptance: 25 entries and the YAML still parses.
+    Done: 25 entries, all unique ids, all catalogued from search only (fetching is
+    blocked, item 13). Follow-up: add sources only when they carry wire tags or form
+    a version pair for diff tests.
 15. `done 2026-11-05` `[safe]` **Competitive watch.** No PDF→FIXatdl/Orchestra
     converter found; see `docs/research/competitors.md`. Next check due 2026-12-05.
 

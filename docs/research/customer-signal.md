@@ -56,3 +56,22 @@ press on multi-month algo onboarding turned up (search on 2026-11-05).
   <https://forum.fixtrading.org/t/targetstrategy-field-in-4-4/1633>
   *Product:* storing wire values as strings (D6) is right. Strategy wire value is the
   stable identity across versions, which supports diff matching by wire value (item 7).
+
+## 2026-11-06 (second PM firing)
+
+- **Brokers identify the strategy in at least four ways.** TargetStrategy(847) with
+  integers (LSEG FXall `1001` = TWAP) or letters (Coinbase), a custom tag carrying a
+  string (NYSE Pillar Gateway, up to 20 characters), the routing destination
+  ExDestination(100) (WEX `WEX-VWAP`), and BrokerID(76) together with OrdType `X` (Deltix Ember).
+  <https://developers.lseg.com/content/dam/devportal/api-families/fx-venues/cash-rfq-fix/refinitiv_fxall_fx_trading_fix_api.pdf> ·
+  <https://www.nyse.com/publicdocs/nyse/NYSE_Pillar_Gateway_FIX_Protocol_Specification.pdf> ·
+  <https://wex-help.atlassian.net/wiki/spaces/WFS/pages/7602239/WEX+Dynamic+Algorithms> ·
+  <https://ember.deltixlab.com/docs/algos/vwap/>
+  *Product:* `strategy_identifier_tag` (an int) with string wire values covers all four.
+  Algos also often require a fixed value on a standard field (FXall: OrdType=E; Deltix:
+  OrdType=X). These must be extracted as rules (StrategyEdits). If they are missed, the
+  orders are rejected.
+- **Participation-rate tags vary.** The tag is 849, NYSE 20049/20050, or TT 9103.
+  <https://library.tradingtechnologies.com/tt-fix/tt-fix-general/fix-message-structure/component-targetstrategy-tt-premium-order-types/>
+  *Product:* this is the kind of cross-broker mapping an OMS team does by hand. A
+  later "same concept, different tag" view in the library would sell it.

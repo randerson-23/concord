@@ -31,8 +31,11 @@ PR or edit this file.
    `nyse.com`, `www.nyse.com`, `www.cqg.com`, `help.cqg.com`, `www.sc.com`,
    `www.developer.saxo`, `www.home.saxo`, `developer.gs.com`, `business.bofa.com`,
    `nasdaq.com`, `www.nasdaq.com`, `cdn.cboe.com`, `library.tradingtechnologies.com`,
-   `prerak-proof.github.io`, plus `archive.fixtrading.org`, `cdnws.fixtrading.org`
-   and `www.globaltrading.net` for research (confirmed blocked 2026-11-05).
+   `prerak-proof.github.io`, `docs.cdp.coinbase.com`, `quod-financial.github.io`,
+   `developers.lseg.com`, `ember.deltixlab.com`, `wex-help.atlassian.net`,
+   `www.commanderfx.com`, `www.integralsupport.com`, plus `archive.fixtrading.org`,
+   `cdnws.fixtrading.org` and `www.globaltrading.net` for research (confirmed blocked
+   2026-11-05; `ember.deltixlab.com` and `wex-help.atlassian.net` again 2026-11-06).
    *Blocks:* backlog item 13 (corpus terms review), and with it any real-spec
    extraction test.
 4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
