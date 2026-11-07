@@ -34,6 +34,42 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
    raises a clean `FixatdlError`; 3 strict xfails (item 20). `malformed.atdl.xml` is not a
    negative: it parses (its own header says so). The reader now wraps IR validation errors
    as `FixatdlError` naming the strategy. Follow-up: diff real samples (item 1 follow-up).
+21. `todo` **PDF tables: read real field tables with wrapped cells.** On a real
+    spec, `extract_tables` breaks a field table into many 2-row fragments. PM
+    probe 2026-11-07: `commanderfx-rules-of-engagement` (`use: ok`), page 28 gives
+    `[2, 2, 2]`. The real table has columns *Field | Tag | Req | Description*.
+    Descriptions wrap over several lines, sit in blank-line-separated blocks, and
+    there are indented repeating-group members (`NoClOrdLinkID 20026` →
+    `ClOrdLinkID 583`, `ClOrdLinkType 20027`). Every extraction pass and citation
+    depends on getting these rows right, and this needs no API key. Item 3's
+    follow-up predicted the problem; this item proves it and fixes it.
+    Do this:
+    - Improve table detection in `concord.pdf`. Either use column positions
+      inferred from rows that fill every column, or use pdfplumber's word
+      positions (it is MIT-licensed). Record the license in the commit if you add
+      it. A line with text only in the last column continues the row above it.
+      Keep indentation as a `depth` on the row, or an equivalent, so group members
+      are distinguishable.
+    - Synthetic test first, in our own words: generate a PDF in the test with a
+      4-column field table, 3-line wrapped descriptions, blank-line gaps and an
+      indented group. Assert one table, the right row count, merged
+      descriptions and the group depth.
+    - Real-spec test, opt-in on `CONCORD_PUBLIC_SAMPLES=1` (the D15 pattern, but
+      fetched by URL). Fetch the PDF once into `corpus/cache/<id>/`. Check that the
+      file starts with `%PDF`. If it does not, as with a bot-challenge HTML page,
+      skip with that reason and do not retry: NYSE began answering with
+      Cloudflare challenges on 2026-11-07. On page 28, assert that rows
+      `(TargetStrategy, 847, N)`, `(ExDestination, 100, N)` and
+      `(ClOrdLinkType, 20027, N)` exist, with `ClOrdLinkType` deeper than
+      `NoClOrdLinkID`. Assert only names and tag numbers. Do not copy the
+      document's prose into the repo.
+    - Note: the running header extracts as `Co rporates` (a space inside a word).
+      Check whether D10 folding handles split glyphs. If it does not, add a
+      follow-up item and do not loosen D10.
+    Acceptance: both tests pass. Existing `tests/test_pdf.py` and the extraction
+    replay tests still pass, or are updated with a stated reason. Why first: it is
+    the largest remaining risk to the accuracy claim that can be tested without
+    the API key.
 8. `todo` **Site: mark parameters that are not mutable on cancel/replace.** Show a
    badge wherever `mutable_on_cxl_rpl is False`, and add a "cannot amend" summary
    on each strategy page. Customer signal says custom tags breaking cxl/rpl is a
