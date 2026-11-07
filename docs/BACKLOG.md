@@ -28,12 +28,31 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
    Follow-ups: diff Citation changes (provenance drift) and reorder-only
    changes; match strategies by wire value when names change; diff against
    real public FIXatdl samples once item 2 lands.
-2. `blocked: session GitHub scope covers only randerson-23/concord, so other repos (atdl4j etc.) can't be read` **Public FIXatdl samples.** Find FIXatdl files published on GitHub
-   under permissive licenses (start with `atdl4j/atdl4j` examples and
-   `FixPortal/fixportal-fixatdl`). Record each in `corpus/sources.yaml`
-   with URL and license. Add a test that fetches them into `corpus/cache/`
-   (skipped when offline) and reads every one without error. Fix reader gaps
-   they expose. Do not commit the files themselves.
+2. `todo` **Public FIXatdl samples: read every public sample without error.**
+   Unblocked 2026-11-07: the session can `git clone` public GitHub repos and
+   read `raw.githubusercontent.com`, even though the GitHub API is still scoped.
+   Sources are already in `corpus/sources.yaml` (`atdl4j-test-examples`,
+   `fixportal-fixatdl-fixtures`, both MIT, pinned to a commit).
+   Do this:
+   - `tests/test_public_samples.py` fetches each repo into `corpus/cache/<id>/`
+     with `git clone --depth 1` and then `git checkout <pinned sha>`, or with
+     `git fetch --depth 1 origin <sha>`. Reuse the cache if it is present. Skip
+     the whole module when the fetch fails (offline). It never runs in CI by
+     default: gate it on `CONCORD_PUBLIC_SAMPLES=1`, like the XSD opt-in.
+   - Parametrize over the sample files: the 15 `src/test/resources/*.xml` in
+     atdl4j, and the FixPortal `*.xml` / `*.atdl.xml` fixtures. Expect
+     `malformed.atdl.xml` and `invalid-schema.xml` to raise a clean
+     `concord` error that names the location, not to crash. Every other file
+     must read, write back to FIXatdl, and re-read to an equal `AlgoSpec`.
+   - Fix the reader or writer gaps this exposes. If a gap is too big for one
+     firing, mark that file `xfail` with the reason and add a backlog item.
+   - Do not commit the files (hard rule 2). Record the fetch approach as a
+     DECISIONS entry so the Orchestra XSD (item 9b) follows it.
+   Acceptance: `CONCORD_PUBLIC_SAMPLES=1 uv run pytest tests/test_public_samples.py`
+   passes, with any xfails listed in STATUS. Plain `uv run pytest` still passes
+   with the module skipped. Why first: this is the first check of the reader
+   against FIXatdl that we did not write. Item 1's follow-up (diffing real
+   samples) also needs it.
 3. `done 2026-11-02` **PDF text layer.** `concord.pdf`: page-aware text and table
    extraction that keeps page numbers, for citations. Use `pypdf` or
    `pdfplumber` (permissive). Not PyMuPDF (AGPL). Test against a synthetic PDF
@@ -138,9 +157,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     message referencing the fields from 9a (encoding-aware per item 10), and
     `concord convert spec.json out.xml --to orchestra`. Schema validation is opt-in
     through `CONCORD_ORCHESTRA_XSD_DIR` (skipped when unset), matching the FIXatdl
-    pattern. Fetching the XSD from `FIXTradingCommunity/fix-orchestra` may hit the
-    same scope block as item 2. If it does, ship with the opt-in test and do not
-    vendor the XSD. D7 allows vendoring, but only once the XSD can be fetched.
+    pattern. The XSDs can be fetched (checked 2026-11-07): `repository.xsd`,
+    `repositorytypes.xsd` and the `dc*` / `xml.xsd` imports are under
+    `repository/src/main/resources/xsd/` in `FIXTradingCommunity/fix-orchestra`,
+    which is Apache-2.0 (corpus id `fix-orchestra-repository-xsd`, pinned).
+    D7 allows vendoring them with attribution (a NOTICE entry). Fetching on
+    demand like the FIXatdl XSD is also fine. The worker picks one and records it.
+    `repository/src/test/resources/examples/mit_2016.xml` is a reference
+    Orchestra file to check the writer's structure against.
     Acceptance: CLI test writes the file and exits 0; XPath test for the message
     members; determinism test.
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and

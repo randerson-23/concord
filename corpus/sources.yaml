@@ -300,3 +300,44 @@ sources:
     notes: >-
       2011, FIX 4.3. TWAP as a strategy order with value "ST" plus suffixes "P"/"W". Old; weak but
       shows a composite string strategy code.
+  # Added 2026-11-07. Public GitHub repos are readable by git clone and raw.githubusercontent.com
+  # (the GitHub API is not). Licenses checked from each repo's LICENSE file. Pinned to the commit checked.
+  - id: atdl4j-test-examples
+    title: atdl4j test resources (FIXatdl 1.1 example files)
+    publisher: atdl4j project (John Shields, Scott Atwell, Danilo Tuler, Renato Gallart)
+    url: https://github.com/atdl4j/atdl4j/tree/a11bea0d84a7a57c247a3586b4d53f00485de220/src/test/resources
+    kind: fixatdl
+    found: 2026-11-07
+    terms: >-
+      MIT License, copyright 2008-2013 the authors named above (repo LICENSE file, read 2026-11-07).
+    license: MIT
+    notes: >-
+      15 example files, e.g. "Example Strategy Edit Rules.xml", "Example Multiple Strategies.xml",
+      "ExampleMinMaxLengthCheck.xml". Written by the reference-implementation authors to exercise
+      FIXatdl features. Not broker specs, but the best public reader conformance set. HEAD dated 2023-04-20.
+  - id: fixportal-fixatdl-fixtures
+    title: FixPortal FIXatdl library test fixtures
+    publisher: FixPortal (Steve Wilkinson)
+    url: https://github.com/FixPortal/fixportal-fixatdl/tree/65c3293a3be71a11985c132c4c92a9b15c6fd8bc/tests
+    kind: fixatdl
+    found: 2026-11-07
+    terms: >-
+      MIT License, copyright 2010-2011 Steve Wilkinson (repo LICENSE file, read 2026-11-07).
+    license: MIT
+    notes: >-
+      13 XML fixtures under tests/FixPortal.FixAtdl.Tests/Fixtures and
+      tests/FixPortal.FixAtdl.Contracts.Tests/Fixtures (twap, vwap, pov, multi-strategy,
+      editref-staterule, expressions, RealWorld/regions-enums, RealWorld/tz-clock). malformed.atdl.xml
+      and invalid-schema.xml are deliberate negatives. Repo is actively developed (last commit 2026-11-03).
+  - id: fix-orchestra-repository-xsd
+    title: FIX Orchestra repository schema (XSD) and example
+    publisher: FIX Trading Community
+    url: https://github.com/FIXTradingCommunity/fix-orchestra/tree/8b61f49175afdc3d23c380b47ac821ab53bf3105/repository/src/main/resources/xsd
+    kind: other
+    found: 2026-11-07
+    terms: >-
+      Apache License 2.0 (repo LICENSE file, read 2026-11-07). D7 allows vendoring with attribution.
+    license: Apache-2.0
+    notes: >-
+      repository.xsd plus repositorytypes.xsd, dc.xsd, dcterms.xsd, dcmitype.xsd, xml.xsd. Example
+      Orchestra file at repository/src/test/resources/examples/mit_2016.xml. For backlog item 9b.

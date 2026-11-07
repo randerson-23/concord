@@ -41,10 +41,9 @@ PR or edit this file.
 4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
    spend on live extraction (budget roughly $10–25 per spec converted).
    *Blocks:* backlog item 5 live runs only — everything else proceeds.
-5. **Public FIXatdl samples need repo access.** Sessions are scoped to
-   `randerson-23/concord`. *Recommended:* either paste raw URLs + licenses of the
-   atdl4j / fixportal sample files into `corpus/sources.yaml` yourself, or allow
-   read access to those public repos. *Blocks:* backlog item 2.
+5. ~~Public FIXatdl samples need repo access.~~ *Resolved 2026-11-07, no action
+   needed.* Sessions can `git clone` public GitHub repos, so backlog item 2 is
+   unblocked.
 6. **FIXatdl XSD license.** The official XSDs say use is "subject to the
    disclaimer" in the written spec. *Recommended:* keep them out of the repo
    (current approach — tests fetch them on demand) until you or a lawyer has

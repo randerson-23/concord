@@ -40,3 +40,12 @@ Here is what does exist:
 **Implication:** the conversion gap is still open. The nearest threat is a
 member-only, manual tool aimed at publishers. Our free public spec browser
 (backlog item 6) has no direct equivalent.
+
+## 2026-11-07 (interim note)
+
+- **FixPortal FIXatdl library (.NET, MIT) is actively developed again.** Its last
+  commit was 2026-11-03, and it has conformance and "RealWorld" fixtures plus AI
+  review tooling. It parses and renders FIXatdl. It does not turn PDFs into
+  FIXatdl, so it consumes our output and is a possible partner. Watch it for
+  any authoring or conversion features.
+  <https://github.com/FixPortal/fixportal-fixatdl>
