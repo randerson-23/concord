@@ -24,21 +24,13 @@ PR or edit this file.
    outside-business clause, and non-compete terms. *Recommended:* read it this
    month; if anything is ambiguous, an hour with an employment lawyer is cheap
    insurance. *Blocks:* public launch, first customer conversations.
-3. **Widen the environment's network access** so runs can fetch public spec
-   PDFs. Today it allows GitHub, package registries and search only.
-   *Recommended:* add specific domains as the corpus catalogue finds them,
-   rather than opening everything. *Recommended one-word answer:* **Yes**. That
-   means allowlisting these publisher domains from `corpus/sources.yaml`:
-   `nyse.com`, `www.nyse.com`, `www.cqg.com`, `help.cqg.com`, `www.sc.com`,
-   `www.developer.saxo`, `www.home.saxo`, `developer.gs.com`, `business.bofa.com`,
-   `nasdaq.com`, `www.nasdaq.com`, `cdn.cboe.com`, `library.tradingtechnologies.com`,
-   `prerak-proof.github.io`, `docs.cdp.coinbase.com`, `quod-financial.github.io`,
-   `developers.lseg.com`, `ember.deltixlab.com`, `wex-help.atlassian.net`,
-   `www.commanderfx.com`, `www.integralsupport.com`, plus `archive.fixtrading.org`,
-   `cdnws.fixtrading.org` and `www.globaltrading.net` for research (confirmed blocked
-   2026-11-05; `ember.deltixlab.com` and `wex-help.atlassian.net` again 2026-11-06).
-   *Blocks:* backlog item 13 (corpus terms review), and with it any real-spec
-   extraction test.
+3. ~~Widen the environment's network access.~~ *Resolved 2026-11-07:* the owner
+   approved adding the 24 publisher and research sites to the Default environment.
+   Verified: nyse.com, cdn.cboe.com, www.developer.saxo and prerak-proof.github.io
+   return 200. `www.cqg.com` returns 403 from its own bot check. Treat that as the
+   publisher refusing automated access: do not work around it. Skip the CQG PDFs
+   unless they are fetched by hand. New publisher domains still need adding one by
+   one (at most 20 per change).
 4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
    spend on live extraction (budget roughly $10–25 per spec converted).
    *Blocks:* backlog item 5 live runs only — everything else proceeds.

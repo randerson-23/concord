@@ -98,10 +98,16 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
 
 ## Phase A — research `[safe]`
 
-13. `blocked: network policy blocks every publisher domain, so terms cannot be read (STATUS Needs owner 3)` `[safe]` **Corpus terms review.** For each
+13. `todo` `[safe]` **Corpus terms review.** For each
     `corpus/sources.yaml` entry, fetch the document into `corpus/cache/`, record
     the publisher's stated terms and check whether it carries FIX wire tags.
     Acceptance: every entry has `terms` filled in, with no "Not reviewed" left.
+    Unblocked 2026-11-07, when the publisher domains were allowlisted. Where a site
+    refuses automated access (CQG returns 403), record `terms: Not fetched,
+    publisher blocks automated access`. Do not work around the block. Also
+    record, for each entry, whether it carries FIX wire tags (yes/no). The
+    extraction item that follows should start from the best tagged PDF (likely
+    `proof-fix-spec` or `nyse-pillar-to-algo-fix`).
 14. `done 2026-11-06` `[safe]` **Public algo spec catalogue** (25 of 25 catalogued: 10 on
     2026-11-04, 6 on 2026-11-05, 9 on 2026-11-06). Find more openly published broker/venue algo
     specs and record each in `corpus/sources.yaml`. Prefer documents that carry
