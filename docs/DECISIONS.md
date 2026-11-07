@@ -117,3 +117,13 @@ role definitions in `.claude/agents/` are unchanged in substance. The PM
 commits and pushes its own planning changes to `dev`; only the Worker merges
 (D12 unchanged). The old single "Concord daily build" task is disabled, not
 deleted, so its run history is kept.
+
+## D15 · 2026-11-07 · Public sample repos: fetched by pinned commit, opt-in tests
+
+Public GitHub sample sets (corpus kind `fixatdl`) are read by `tests/test_public_samples.py`,
+gated on `CONCORD_PUBLIC_SAMPLES=1` and skipped offline. Each repo is fetched with
+`git init` + `git fetch --depth 1 <url> <sha>` + `git checkout FETCH_HEAD` into the
+git-ignored `corpus/cache/<id>/`, reused when HEAD already equals the pinned sha (hard rule 2:
+nothing committed). Item 9b (Orchestra XSD) should use the same approach. Round-trip equality
+allows two documented writer normalisations: an `enumID` that is not a legal XML identifier
+is regenerated, and an unlabeled enum value is written with its wire value as `uiRep`.

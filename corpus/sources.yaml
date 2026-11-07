@@ -1,7 +1,7 @@
 # Manifest of public documents used for development and testing.
 # Rules and entry format: corpus/README.md
 # Documents are fetched into corpus/cache/ (git-ignored); never commit them.
-# Entries below are CATALOGUED ONLY (found by web search 2026-11-04 and 2026-11-05). None fetched;
+# Entries below are CATALOGUED ONLY (found by web search 2026-11-04 to 2026-11-06). None fetched;
 # publisher terms NOT yet reviewed, so do not use for development until `terms` is filled.
 
 sources:
@@ -212,3 +212,132 @@ sources:
     license: null
     notes: >-
       Simulator venue RoE, not an algo spec. Orchestra-phase test doc.
+  # Added 2026-11-06 (second PM firing; web search snippets only; none fetched; terms not reviewed).
+  - id: nyse-pillar-gateway-fix
+    title: NYSE Pillar Gateway FIX Protocol Specification
+    publisher: NYSE (ICE)
+    url: https://www.nyse.com/publicdocs/nyse/NYSE_Pillar_Gateway_FIX_Protocol_Specification.pdf
+    kind: pdf
+    found: 2026-11-06
+    terms: >-
+      Not reviewed (not fetched). Published openly on nyse.com/publicdocs; carries an NYSE Group copyright line.
+    license: null
+    notes: >-
+      Client-facing gateway RoE. TargetStrategy is a customer-defined string (up to 20 chars) plus
+      MinParticipationRate 20049 / MaxParticipationRate 20050 alongside 849, per search snippet.
+      Pairs with nyse-pillar-to-algo-fix (venue to algo provider side of the same flow).
+  - id: lseg-fxall-fix-api
+    title: Refinitiv FXall FX Trading FIX API v5.1
+    publisher: LSEG (Refinitiv)
+    url: https://developers.lseg.com/content/dam/devportal/api-families/fx-venues/cash-rfq-fix/refinitiv_fxall_fx_trading_fix_api.pdf
+    kind: pdf
+    found: 2026-11-06
+    terms: >-
+      Not reviewed (not fetched). Published on the publisher's developer portal; check whether a login or terms page applies.
+    license: null
+    notes: >-
+      FX algos: TargetStrategy(847) 1001 = TWAP, 1002 = VWAP, 1003 = Fixing; algo orders must use
+      OrdType(40)=E and single-leg only, per search snippet. Good test of a strategy rule on a standard field.
+  - id: deltix-ember-algos
+    title: Ember Trade Hub algorithm docs (VWAP, TWAP)
+    publisher: Deltix (EPAM)
+    url: https://ember.deltixlab.com/docs/algos/vwap/
+    kind: html
+    found: 2026-11-06
+    terms: >-
+      Not reviewed (fetch blocked by network policy). Public product documentation site.
+    license: null
+    notes: >-
+      Algo orders use OrdType X with BrokerID(76) naming the algo; custom tags such as 7002
+      EligibleExchanges, per search snippet. TWAP page at https://ember.deltixlab.com/docs/algos/twap/.
+      Identifier is not 847: exercises strategy_identifier_tag.
+  - id: wex-dynamic-algorithms
+    title: WEX Dynamic Algorithms (WEX FIX Specification)
+    publisher: Wolverine Execution Services (WEX)
+    url: https://wex-help.atlassian.net/wiki/spaces/WFS/pages/7602239/WEX+Dynamic+Algorithms
+    kind: html
+    found: 2026-11-06
+    terms: >-
+      Not reviewed (fetch blocked by network policy). Public help-site page.
+    license: null
+    notes: >-
+      Algos selected by ExDestination(100) values such as WEX-VWAP / WEX-TWAP rather than 847,
+      per search snippet. A third strategy-identifier pattern (routing destination).
+  - id: commanderfx-rules-of-engagement
+    title: Commander Rules of Engagement
+    publisher: CommanderFX ("Corporates and Markets"; confirm publishing bank on fetch)
+    url: https://www.commanderfx.com/downloads/Commander_Rules_Of_Engagement.pdf
+    kind: pdf
+    found: 2026-11-06
+    terms: >-
+      Not reviewed (not fetched). Offered as a public download per search result.
+    license: null
+    notes: >-
+      FX execution strategies keyed by TargetStrategy(847); EffectiveTime start, ExpireTime required
+      for GTD. Roughly 2016-2018 per snippet; older but carries tags.
+  - id: tt-fix-targetstrategy-premium
+    title: TT FIX Component TargetStrategy (TT Premium Order Types)
+    publisher: Trading Technologies
+    url: https://library.tradingtechnologies.com/tt-fix/tt-fix-general/fix-message-structure/component-targetstrategy-tt-premium-order-types/
+    kind: html
+    found: 2026-11-06
+    terms: >-
+      Not reviewed (not fetched). Public documentation library.
+    license: null
+    notes: >-
+      Flat-tag TT premium order types (e.g. POV with MaxParticipation 9103, EffectiveTime 168,
+      ExpireTime 126) per search snippet; contrast with the 957-group encoding in tt-fix-strategy-parameters-grp.
+  - id: integral-fxi-fix-client-api
+    title: FX Inside FIX Client API Guide 4.1 v2 (draft)
+    publisher: Integral Development Corp.
+    url: https://www.integralsupport.com/files/docs/API/FX_Inside_FIX_Client_API_4.1v2_DRAFT.pdf
+    kind: pdf
+    found: 2026-11-06
+    terms: >-
+      Not reviewed (not fetched). Publicly posted on the publisher's support site; marked DRAFT, not
+      confidential per search title. Re-check for any confidentiality notice before use.
+    license: null
+    notes: >-
+      2011, FIX 4.3. TWAP as a strategy order with value "ST" plus suffixes "P"/"W". Old; weak but
+      shows a composite string strategy code.
+  # Added 2026-11-07. Public GitHub repos are readable by git clone and raw.githubusercontent.com
+  # (the GitHub API is not). Licenses checked from each repo's LICENSE file. Pinned to the commit checked.
+  - id: atdl4j-test-examples
+    title: atdl4j test resources (FIXatdl 1.1 example files)
+    publisher: atdl4j project (John Shields, Scott Atwell, Danilo Tuler, Renato Gallart)
+    url: https://github.com/atdl4j/atdl4j/tree/a11bea0d84a7a57c247a3586b4d53f00485de220/src/test/resources
+    kind: fixatdl
+    found: 2026-11-07
+    terms: >-
+      MIT License, copyright 2008-2013 the authors named above (repo LICENSE file, read 2026-11-07).
+    license: MIT
+    notes: >-
+      15 example files, e.g. "Example Strategy Edit Rules.xml", "Example Multiple Strategies.xml",
+      "ExampleMinMaxLengthCheck.xml". Written by the reference-implementation authors to exercise
+      FIXatdl features. Not broker specs, but the best public reader conformance set. HEAD dated 2023-04-20.
+  - id: fixportal-fixatdl-fixtures
+    title: FixPortal FIXatdl library test fixtures
+    publisher: FixPortal (Steve Wilkinson)
+    url: https://github.com/FixPortal/fixportal-fixatdl/tree/65c3293a3be71a11985c132c4c92a9b15c6fd8bc/tests
+    kind: fixatdl
+    found: 2026-11-07
+    terms: >-
+      MIT License, copyright 2010-2011 Steve Wilkinson (repo LICENSE file, read 2026-11-07).
+    license: MIT
+    notes: >-
+      13 XML fixtures under tests/FixPortal.FixAtdl.Tests/Fixtures and
+      tests/FixPortal.FixAtdl.Contracts.Tests/Fixtures (twap, vwap, pov, multi-strategy,
+      editref-staterule, expressions, RealWorld/regions-enums, RealWorld/tz-clock). malformed.atdl.xml
+      and invalid-schema.xml are deliberate negatives. Repo is actively developed (last commit 2026-11-03).
+  - id: fix-orchestra-repository-xsd
+    title: FIX Orchestra repository schema (XSD) and example
+    publisher: FIX Trading Community
+    url: https://github.com/FIXTradingCommunity/fix-orchestra/tree/8b61f49175afdc3d23c380b47ac821ab53bf3105/repository/src/main/resources/xsd
+    kind: other
+    found: 2026-11-07
+    terms: >-
+      Apache License 2.0 (repo LICENSE file, read 2026-11-07). D7 allows vendoring with attribution.
+    license: Apache-2.0
+    notes: >-
+      repository.xsd plus repositorytypes.xsd, dc.xsd, dcterms.xsd, dcmitype.xsd, xml.xsd. Example
+      Orchestra file at repository/src/test/resources/examples/mit_2016.xml. For backlog item 9b.

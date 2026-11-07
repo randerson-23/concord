@@ -6,11 +6,12 @@
 
 ## Last run
 
-**2026-11-06 — diff rename matching.** PM re-ordered the backlog (wire_encoding
-before the Orchestra writer; item 9 split), catalogued 2 more public sources
-(18 of 25). Worker made `concord diff` match strategies by wire value and report
-a cosmetic `strategy_renamed` (D9 addendum); ambiguous wire values stay
-removed/added. Tests pass.
+**2026-11-07 (extra run) — public FIXatdl samples.** Worker read 29 public sample
+files (atdl4j + FixPortal, MIT, pinned) with the opt-in `CONCORD_PUBLIC_SAMPLES=1` test.
+25 round-trip equal, 1 deliberate negative errors cleanly, 3 are strict xfails: the IR
+rejects shared strategy wire values (2 atdl4j files) and a repeated fixTag (`tz-clock.xml`);
+backlog item 20 decides the rule. Reader errors from IR validation now name the strategy.
+Checks pass; the PR is left for the owner to merge unless told otherwise.
 
 ## Needs owner
 
@@ -31,17 +32,19 @@ PR or edit this file.
    `nyse.com`, `www.nyse.com`, `www.cqg.com`, `help.cqg.com`, `www.sc.com`,
    `www.developer.saxo`, `www.home.saxo`, `developer.gs.com`, `business.bofa.com`,
    `nasdaq.com`, `www.nasdaq.com`, `cdn.cboe.com`, `library.tradingtechnologies.com`,
-   `prerak-proof.github.io`, plus `archive.fixtrading.org`, `cdnws.fixtrading.org`
-   and `www.globaltrading.net` for research (confirmed blocked 2026-11-05).
+   `prerak-proof.github.io`, `docs.cdp.coinbase.com`, `quod-financial.github.io`,
+   `developers.lseg.com`, `ember.deltixlab.com`, `wex-help.atlassian.net`,
+   `www.commanderfx.com`, `www.integralsupport.com`, plus `archive.fixtrading.org`,
+   `cdnws.fixtrading.org` and `www.globaltrading.net` for research (confirmed blocked
+   2026-11-05; `ember.deltixlab.com` and `wex-help.atlassian.net` again 2026-11-06).
    *Blocks:* backlog item 13 (corpus terms review), and with it any real-spec
    extraction test.
 4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
    spend on live extraction (budget roughly $10–25 per spec converted).
    *Blocks:* backlog item 5 live runs only — everything else proceeds.
-5. **Public FIXatdl samples need repo access.** Sessions are scoped to
-   `randerson-23/concord`. *Recommended:* either paste raw URLs + licenses of the
-   atdl4j / fixportal sample files into `corpus/sources.yaml` yourself, or allow
-   read access to those public repos. *Blocks:* backlog item 2.
+5. ~~Public FIXatdl samples need repo access.~~ *Resolved 2026-11-07, no action
+   needed.* Sessions can `git clone` public GitHub repos, so backlog item 2 is
+   unblocked.
 6. **FIXatdl XSD license.** The official XSDs say use is "subject to the
    disclaimer" in the written spec. *Recommended:* keep them out of the repo
    (current approach — tests fetch them on demand) until you or a lawyer has

@@ -160,7 +160,16 @@ def test_errors_name_the_location(body, message):
 
 def test_duplicate_parameter_names_are_rejected():
     body = b'<Parameter xsi:type="Int_t" name="Q"/><Parameter xsi:type="Int_t" name="Q"/>'
-    with pytest.raises(ValueError, match="duplicate parameter names"):
+    with pytest.raises(FixatdlError, match=r"Strategy\[@name='S'\].*duplicate parameter names"):
+        read_fixatdl(_MINIMAL % body)
+
+
+def test_duplicate_tags_name_the_strategy():
+    body = (
+        b'<Parameter xsi:type="Int_t" name="A" fixTag="7001"/>'
+        b'<Parameter xsi:type="Int_t" name="B" fixTag="7001"/>'
+    )
+    with pytest.raises(FixatdlError, match=r"Strategy\[@name='S'\].*tag used twice"):
         read_fixatdl(_MINIMAL % body)
 
 

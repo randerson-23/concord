@@ -28,85 +28,12 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
    Follow-ups: diff Citation changes (provenance drift) and reorder-only
    changes; match strategies by wire value when names change; diff against
    real public FIXatdl samples once item 2 lands.
-2. `blocked: session GitHub scope covers only randerson-23/concord, so other repos (atdl4j etc.) can't be read` **Public FIXatdl samples.** Find FIXatdl files published on GitHub
-   under permissive licenses (start with `atdl4j/atdl4j` examples and
-   `FixPortal/fixportal-fixatdl`). Record each in `corpus/sources.yaml`
-   with URL and license. Add a test that fetches them into `corpus/cache/`
-   (skipped when offline) and reads every one without error. Fix reader gaps
-   they expose. Do not commit the files themselves.
-3. `done 2026-11-02` **PDF text layer.** `concord.pdf`: page-aware text and table
-   extraction that keeps page numbers, for citations. Use `pypdf` or
-   `pdfplumber` (permissive). Not PyMuPDF (AGPL). Test against a synthetic PDF
-   generated in the test itself.
-   Done: `concord.pdf` (`read_pdf`, `extract_tables`, `normalize`); tables are a
-   layout-gap heuristic. Follow-up: ruled-table detection via pdfplumber if the
-   heuristic proves weak on real specs.
-4. `done 2026-11-03` **Citation verifier.** Given an `AlgoSpec` and its source PDF,
-   confirm every citation's `quote` actually appears on its cited `page`
-   (whitespace- and hyphenation-tolerant). Report failures. This is the
-   deterministic guard against an LLM inventing a rule — it is the core of
-   the accuracy story, so make it strict.
-   Done: `concord.verify` + `concord verify spec.json --source ID=PDF` (exit 2 on
-   any failure). Follow-ups: check `Citation.locator`; flag quotes that match
-   on several pages when none is cited.
-5. `done 2026-11-04` **LLM extraction scaffold.** `concord.extract`: chunk a PDF by page,
-   ask Claude for IR fragments with mandatory page+quote citations via
-   structured output, merge fragments into one `AlgoSpec`, run the citation
-   verifier, route anything unverified to a review list. Use the latest Claude
-   model. Tests run against recorded responses so no API key is needed in CI.
-   Live runs `blocked: ANTHROPIC_API_KEY` until the owner adds it.
-   Done: `concord.extract` (`extract_spec`, `Backend` protocol, `ReplayBackend`,
-   `AnthropicBackend`) and `concord extract PDF --id --title --out [--replay DIR]`
-   (exit 2 if the review list is non-empty). Facts without a verified citation
-   never enter the spec. Follow-ups: tune prompt on a real spec once a key exists
-   (item 5b); per-page calls miss cross-page context (consider a second pass that
-   resolves "see table 3"); cost/token accounting.
-6. `done 2026-11-05` **Static spec site, core: `concord site SPEC OUT_DIR` renders one
-   `AlgoSpec` as deterministic static HTML with every fact linked to its source
-   page.** This starts the free public library, the funnel in business plan §5/§8.
-   Nobody else offers a public spec browser
-   (`docs/research/competitors.md`). It needs no owner input.
-   Acceptance:
-   - New `src/concord/site.py` using the stdlib only (`html.escape`, no template
-     engine, no new dependency). All IR text is escaped. Inline CSS, no JS, no
-     external assets, so the output works from `file://`.
-   - `SPEC` accepts IR JSON or FIXatdl (reuse `cli._load`). Output is `index.html`
-     (provider, description, identifier tag, a table of strategies with
-     name / label / wire value / parameter count) plus
-     `strategies/<slug>.html` for each strategy. Each strategy page shows a
-     parameter table (name, FIX tag, type, required, default, min/max, enum
-     values as `wire — label`, mutable on cancel/replace), rules (StrategyEdits as
-     readable expressions such as `Side == 1 AND OrderQty > 0`) and applicability.
-     Slugs are unique even when two names slug the same.
-   - Citations: each cited fact shows `[source-id p.N]`. It links to
-     `SourceDocument.url#page=N` when the source has a URL, and the quote goes in a
-     `title` attribute. Facts with no citation get a visible `uncited` marker.
-     Concord does not hide guesses.
-   - Deterministic: render the same spec twice and get byte-identical trees (no
-     timestamps, IR order kept).
-   - `tests/test_site.py` uses the existing `tests/fixtures/fixatdl/example_broker.xml`
-     plus one synthetic IR with citations. It covers escaping (a `<script>` in a
-     description comes out inert), citation links and `uncited` markers,
-     determinism, slug collisions, and `concord site` exiting 0 and writing the
-     expected files.
-   Done: `concord.site` (`render_site`, `write_site`) and `concord site SPEC OUT_DIR`;
-   `tests/test_site.py`. Only http(s) source URLs become links. Follow-ups: item 8
-   (cxl/rpl badge), item 12 (library index); add a nav link between strategies.
-7. `done 2026-11-06` **Diff: match strategies by wire value when names change.** A
-   removed+added strategy pair with the same `wire_value` is reported as a rename.
-   The rename is cosmetic. Changes inside it are diffed as usual. This follows the
-   D9 parameter rule, so it extends D9 and does not reverse it. Record it as a
-   D9 addendum in DECISIONS. Why first: diff is the paid feature, and public specs
-   show wire values are the stable identity while names and labels drift
-   (`docs/research/customer-signal.md`, 2026-11-06).
-   Acceptance:
-   - Tests in `tests/test_diff.py`: rename alone (cosmetic only, text report reads
-     `renamed 'Old' -> 'New' (wire value 1001)`); rename plus a removed parameter
-     (breaking, reported under the new name); two removed strategies sharing a
-     wire value (no match, reported as removed/added); JSON output carries the
-     old and new names.
-   - CLI test: `concord diff old.json new.json --fail-on-breaking` exits 0 for a
-     rename alone and 2 for rename plus removed parameter.
+2. `done 2026-11-07` **Public FIXatdl samples: read every public sample without error.**
+   Done: `tests/test_public_samples.py` (opt-in `CONCORD_PUBLIC_SAMPLES=1`, fetch
+   approach in D15). 29 files: 25 read, write back and re-read equal; `invalid-schema.xml`
+   raises a clean `FixatdlError`; 3 strict xfails (item 20). `malformed.atdl.xml` is not a
+   negative: it parses (its own header says so). The reader now wraps IR validation errors
+   as `FixatdlError` naming the strategy. Follow-up: diff real samples (item 1 follow-up).
 8. `todo` **Site: mark parameters that are not mutable on cancel/replace.** Show a
    badge wherever `mutable_on_cxl_rpl is False`, and add a "cannot amend" summary
    on each strategy page. Customer signal says custom tags breaking cxl/rpl is a
@@ -123,6 +50,9 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     Moved ahead of item 9 because the Orchestra writer must know the encoding.
     Acceptance: round-trip test, diff classifies an encoding change as breaking,
     site shows the encoding, and `concord schema` shows the field.
+    Note (research 2026-11-06): strategy identifiers also arrive as ExDestination(100)
+    or BrokerID(76). `strategy_identifier_tag` already covers these, so this item adds
+    nothing for them. Keep the fixture's identifier on 847.
 9a. `todo` **FIX Orchestra writer, fields and codeSets.** `concord.orchestra`
     writes an Orchestra repository with one field per algo parameter (custom
     tags as user-defined fields) and one codeSet per enum, plus the strategy
@@ -135,11 +65,24 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     message referencing the fields from 9a (encoding-aware per item 10), and
     `concord convert spec.json out.xml --to orchestra`. Schema validation is opt-in
     through `CONCORD_ORCHESTRA_XSD_DIR` (skipped when unset), matching the FIXatdl
-    pattern. Fetching the XSD from `FIXTradingCommunity/fix-orchestra` may hit the
-    same scope block as item 2. If it does, ship with the opt-in test and do not
-    vendor the XSD. D7 allows vendoring, but only once the XSD can be fetched.
+    pattern. The XSDs can be fetched (checked 2026-11-07): `repository.xsd`,
+    `repositorytypes.xsd` and the `dc*` / `xml.xsd` imports are under
+    `repository/src/main/resources/xsd/` in `FIXTradingCommunity/fix-orchestra`,
+    which is Apache-2.0 (corpus id `fix-orchestra-repository-xsd`, pinned).
+    D7 allows vendoring them with attribution (a NOTICE entry). Fetching on
+    demand like the FIXatdl XSD is also fine. The worker picks one and records it.
+    `repository/src/test/resources/examples/mit_2016.xml` is a reference
+    Orchestra file to check the writer's structure against.
     Acceptance: CLI test writes the file and exits 0; XPath test for the message
     members; determinism test.
+20. `todo` **IR: strategies that share a wire value or a fixTag.** Three public files
+    are rejected by IR uniqueness checks: atdl4j `Example Strategy Filtering.xml` and
+    `Example StrategyPanel Tests2.xml` (many strategies, same `wireValue`, distinguished by
+    region/`fixMsgType` filters) and FixPortal `tz-clock.xml` (two parameters on tag 7157, one
+    active per state rule). Decide the identity rule (wire value plus applicability? tag per
+    state?) and write it as a D-entry before relaxing the validators; that changes diff
+    matching (D9). Remove the strict xfails in `test_public_samples.py` when fixed.
+    Acceptance: all 29 samples pass with no xfail; diff tests still pass.
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.
@@ -159,11 +102,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `corpus/sources.yaml` entry, fetch the document into `corpus/cache/`, record
     the publisher's stated terms and check whether it carries FIX wire tags.
     Acceptance: every entry has `terms` filled in, with no "Not reviewed" left.
-14. `todo` `[safe]` **Public algo spec catalogue** (18 of 25 catalogued: 10 on
-    2026-11-04, 6 on 2026-11-05, 2 on 2026-11-06). Find more openly published broker/venue algo
+14. `done 2026-11-06` `[safe]` **Public algo spec catalogue** (25 of 25 catalogued: 10 on
+    2026-11-04, 6 on 2026-11-05, 9 on 2026-11-06). Find more openly published broker/venue algo
     specs and record each in `corpus/sources.yaml`. Prefer documents that carry
     FIX wire tags; prose-only factsheets are weak test material.
     Acceptance: 25 entries and the YAML still parses.
+    Done: 25 entries, all unique ids, all catalogued from search only (fetching is
+    blocked, item 13). Follow-up: add sources only when they carry wire tags or form
+    a version pair for diff tests.
 15. `done 2026-11-05` `[safe]` **Competitive watch.** No PDF→FIXatdl/Orchestra
     converter found; see `docs/research/competitors.md`. Next check due 2026-12-05.
 
