@@ -34,6 +34,13 @@ PR or edit this file.
 4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
    spend on live extraction (budget roughly $10–25 per spec converted).
    *Blocks:* backlog item 5 live runs only — everything else proceeds.
+   *How (agreed 2026-11-07, deferred by owner for now):* when the owner says **Go**,
+   a session opens the secure network-secret form for `api.anthropic.com` (header
+   `x-api-key`, no prefix). The key is stored on the Default environment and never
+   in the repo or chat. The session also sets the non-secret placeholder
+   `ANTHROPIC_API_KEY=proxy-injected`, because `extract.py` refuses to start without
+   it. Make a dedicated Concord key with a monthly spend limit in the Anthropic
+   Console first. Default is shared by all the owner's cloud sessions.
 5. ~~Public FIXatdl samples need repo access.~~ *Resolved 2026-11-07, no action
    needed.* Sessions can `git clone` public GitHub repos, so backlog item 2 is
    unblocked.
