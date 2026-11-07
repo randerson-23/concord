@@ -34,6 +34,22 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
    raises a clean `FixatdlError`; 3 strict xfails (item 20). `malformed.atdl.xml` is not a
    negative: it parses (its own header says so). The reader now wraps IR validation errors
    as `FixatdlError` naming the strategy. Follow-up: diff real samples (item 1 follow-up).
+21. `done 2026-11-07` **PDF tables: read real field tables with wrapped cells.**
+    Done: `concord.pdf.extract_tables` now infers columns from a block's first row, merges
+    last-column continuation lines (blank-line gaps allowed) into the row above, appends
+    first-column notes such as `(repeating group)` to the first cell, and sets `Table.depths`
+    (0, or 1 for an indented group member). pypdf only; no new dependency. Commander FIX page 28
+    went from `[2, 2, 2]` fragments to one 17-row table. Tests: synthetic wrapped table with
+    group, prose termination, and an opt-in real-spec test (`CONCORD_PUBLIC_SAMPLES=1`, fetched
+    by URL into `corpus/cache`, skipped if the server returns non-PDF). Limits: a description
+    line printed above its row (vertically centred cells) attaches to the previous row; a
+    page-top fragment of a row split across pages is a partial row.
+22. `todo` **Verifier: PDF text with split glyphs.** The Commander FIX running header
+    extracts as `Co rporates`, and field names as `TrdRegPublicationTy pe`. `normalize`
+    keeps the space, so a correct quote of `Corporates` would fail D10. Do not loosen D10.
+    Option: when a quote fails, retry against a space-stripped form of both sides, and report
+    such a match as a distinct `verified (glyph gap)` status for review. Needs an owner-visible
+    DECISIONS entry. Acceptance: tests for the split-word case; plain mismatches still fail.
 8. `todo` **Site: mark parameters that are not mutable on cancel/replace.** Show a
    badge wherever `mutable_on_cxl_rpl is False`, and add a "cannot amend" summary
    on each strategy page. Customer signal says custom tags breaking cxl/rpl is a

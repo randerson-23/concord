@@ -17,6 +17,9 @@ sources:
     use: ok
     notes: >-
       Venue-to-algo-provider FIX 4.2 routing spec; TargetStrategy at tag 20046 plus effective/expire times. v1.0 Sept 2024 per search snippet.
+      PM 2026-11-07: nyse.com now answers automated fetches with a Cloudflare challenge
+      (HTTP 403 HTML) after a few requests. Fetch each NYSE document at most once per run, reuse
+      corpus/cache, and skip on a non-PDF response. Do not work around the challenge.
   - id: nyse-pillar-floor-broker-fix
     title: NYSE Pillar Gateway Floor Broker FIX Specification
     publisher: NYSE (ICE)

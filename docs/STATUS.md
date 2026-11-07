@@ -6,11 +6,12 @@
 
 ## Last run
 
-**2026-11-07 (extra runs).** (1) Public FIXatdl samples: 29 files read; 25 round-trip,
-1 clean negative, 3 strict xfails (backlog item 20). (2) Corpus terms review (item 13) after the
-owner widened network access: fetched 25 sources, 14 usable, 4 excluded for restrictive terms or a
-confidential marking (BofA, Cboe, LSEG, Proof; copies deleted), 7 unreachable. Nothing committed
-from third parties.
+**2026-11-07 (daily firing) — PDF field tables.** Worker rewrote `concord.pdf.extract_tables`
+so real field tables with wrapped descriptions, blank-line gaps and repeating-group members read
+as one table with merged rows and a `depth` per row (backlog item 21; no new dependency). Real
+check on Commander FIX page 28: one 17-row table, with `ClOrdLinkType 20027` nested under
+`NoClOrdLinkID`. New item 22: PDF text sometimes splits glyphs (`Co rporates`), which D10 would
+reject. Earlier today: public FIXatdl samples (item 2) and corpus terms review (item 13).
 
 ## Needs owner
 
@@ -23,13 +24,6 @@ PR or edit this file.
    outside-business clause, and non-compete terms. *Recommended:* read it this
    month; if anything is ambiguous, an hour with an employment lawyer is cheap
    insurance. *Blocks:* public launch, first customer conversations.
-3. ~~Widen the environment's network access.~~ *Resolved 2026-11-07:* the owner
-   approved adding the 24 publisher and research sites to the Default environment.
-   Verified: nyse.com, cdn.cboe.com, www.developer.saxo and prerak-proof.github.io
-   return 200. `www.cqg.com` returns 403 from its own bot check. Treat that as the
-   publisher refusing automated access: do not work around it. Skip the CQG PDFs
-   unless they are fetched by hand. New publisher domains still need adding one by
-   one (at most 20 per change).
 4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
    spend on live extraction (budget roughly $10–25 per spec converted).
    *Blocks:* backlog item 5 live runs only — everything else proceeds.
@@ -40,9 +34,6 @@ PR or edit this file.
    `ANTHROPIC_API_KEY=proxy-injected`, because `extract.py` refuses to start without
    it. Make a dedicated Concord key with a monthly spend limit in the Anthropic
    Console first. Default is shared by all the owner's cloud sessions.
-5. ~~Public FIXatdl samples need repo access.~~ *Resolved 2026-11-07, no action
-   needed.* Sessions can `git clone` public GitHub repos, so backlog item 2 is
-   unblocked.
 6. **FIXatdl XSD license.** The official XSDs say use is "subject to the
    disclaimer" in the written spec. *Recommended:* keep them out of the repo
    (current approach — tests fetch them on demand) until you or a lawyer has
