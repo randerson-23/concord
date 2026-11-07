@@ -98,10 +98,16 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
 
 ## Phase A — research `[safe]`
 
-13. `blocked: network policy blocks every publisher domain, so terms cannot be read (STATUS Needs owner 3)` `[safe]` **Corpus terms review.** For each
-    `corpus/sources.yaml` entry, fetch the document into `corpus/cache/`, record
-    the publisher's stated terms and check whether it carries FIX wire tags.
-    Acceptance: every entry has `terms` filled in, with no "Not reviewed" left.
+13. `done 2026-11-07` `[safe]` **Corpus terms review.** Fetched the 25 non-repo sources into
+    `corpus/cache/` and read their terms. 14 `ok`, 4 `restricted` (BofA: marked confidential;
+    Cboe, LSEG, Proof: no copying) and their cached copies deleted, 7 `unreachable` (CQG
+    technical parameters and Goldman: HTTP 403; FIXsim: proxy refusal; FIX Trading archive: 502;
+    both Nasdaq Nordic PDFs and Integral: server errors). Follow-up: retry the unreachable ones
+    in a later run; do not work around 403s. Wire tags (from keyword/number scan, not a read):
+    carried by the three NYSE specs, `commanderfx-rules-of-engagement`, `saxo-algo-order-fix-tags`,
+    both TT pages and `cqg-algo-engine-support`; prose-only: `saxotraderpro-algoguide`, WEX,
+    Standard Chartered, Deltix. `proof-fix-spec` is now excluded, so the extraction item should
+    start from `nyse-pillar-to-algo-fix`.
 14. `done 2026-11-06` `[safe]` **Public algo spec catalogue** (25 of 25 catalogued: 10 on
     2026-11-04, 6 on 2026-11-05, 9 on 2026-11-06). Find more openly published broker/venue algo
     specs and record each in `corpus/sources.yaml`. Prefer documents that carry

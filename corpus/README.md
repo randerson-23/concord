@@ -34,5 +34,14 @@ a public library later.
   terms: >-                          # what the publisher says about use, verbatim if short
     No stated terms; published openly on the firm's website.
   license: null                      # SPDX id if one applies (e.g. MIT for repo samples)
+  use: ok                            # ok | restricted | unreachable (see below)
   notes: Covers VWAP, TWAP, IS. FIX 4.2. Custom tags 7600-7650.
 ```
+
+## `use` values
+
+- `ok` — reviewed; the document states no restriction beyond a copyright notice. Fetch into
+  `corpus/cache/` for development; never commit or republish it.
+- `restricted` — the terms forbid copying or use, or the document is marked confidential
+  (hard rule 1). Do not fetch; delete any cached copy.
+- `unreachable` — the fetch failed, so the terms were not read. Do not use until reviewed.

@@ -6,12 +6,11 @@
 
 ## Last run
 
-**2026-11-07 (extra run) — public FIXatdl samples.** Worker read 29 public sample
-files (atdl4j + FixPortal, MIT, pinned) with the opt-in `CONCORD_PUBLIC_SAMPLES=1` test.
-25 round-trip equal, 1 deliberate negative errors cleanly, 3 are strict xfails: the IR
-rejects shared strategy wire values (2 atdl4j files) and a repeated fixTag (`tz-clock.xml`);
-backlog item 20 decides the rule. Reader errors from IR validation now name the strategy.
-Checks pass; the PR is left for the owner to merge unless told otherwise.
+**2026-11-07 (extra runs).** (1) Public FIXatdl samples: 29 files read; 25 round-trip,
+1 clean negative, 3 strict xfails (backlog item 20). (2) Corpus terms review (item 13) after the
+owner widened network access: fetched 25 sources, 14 usable, 4 excluded for restrictive terms or a
+confidential marking (BofA, Cboe, LSEG, Proof; copies deleted), 7 unreachable. Nothing committed
+from third parties.
 
 ## Needs owner
 
@@ -24,24 +23,23 @@ PR or edit this file.
    outside-business clause, and non-compete terms. *Recommended:* read it this
    month; if anything is ambiguous, an hour with an employment lawyer is cheap
    insurance. *Blocks:* public launch, first customer conversations.
-3. **Widen the environment's network access** so runs can fetch public spec
-   PDFs. Today it allows GitHub, package registries and search only.
-   *Recommended:* add specific domains as the corpus catalogue finds them,
-   rather than opening everything. *Recommended one-word answer:* **Yes**. That
-   means allowlisting these publisher domains from `corpus/sources.yaml`:
-   `nyse.com`, `www.nyse.com`, `www.cqg.com`, `help.cqg.com`, `www.sc.com`,
-   `www.developer.saxo`, `www.home.saxo`, `developer.gs.com`, `business.bofa.com`,
-   `nasdaq.com`, `www.nasdaq.com`, `cdn.cboe.com`, `library.tradingtechnologies.com`,
-   `prerak-proof.github.io`, `docs.cdp.coinbase.com`, `quod-financial.github.io`,
-   `developers.lseg.com`, `ember.deltixlab.com`, `wex-help.atlassian.net`,
-   `www.commanderfx.com`, `www.integralsupport.com`, plus `archive.fixtrading.org`,
-   `cdnws.fixtrading.org` and `www.globaltrading.net` for research (confirmed blocked
-   2026-11-05; `ember.deltixlab.com` and `wex-help.atlassian.net` again 2026-11-06).
-   *Blocks:* backlog item 13 (corpus terms review), and with it any real-spec
-   extraction test.
+3. ~~Widen the environment's network access.~~ *Resolved 2026-11-07:* the owner
+   approved adding the 24 publisher and research sites to the Default environment.
+   Verified: nyse.com, cdn.cboe.com, www.developer.saxo and prerak-proof.github.io
+   return 200. `www.cqg.com` returns 403 from its own bot check. Treat that as the
+   publisher refusing automated access: do not work around it. Skip the CQG PDFs
+   unless they are fetched by hand. New publisher domains still need adding one by
+   one (at most 20 per change).
 4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
    spend on live extraction (budget roughly $10–25 per spec converted).
    *Blocks:* backlog item 5 live runs only — everything else proceeds.
+   *How (agreed 2026-11-07, deferred by owner for now):* when the owner says **Go**,
+   a session opens the secure network-secret form for `api.anthropic.com` (header
+   `x-api-key`, no prefix). The key is stored on the Default environment and never
+   in the repo or chat. The session also sets the non-secret placeholder
+   `ANTHROPIC_API_KEY=proxy-injected`, because `extract.py` refuses to start without
+   it. Make a dedicated Concord key with a monthly spend limit in the Anthropic
+   Console first. Default is shared by all the owner's cloud sessions.
 5. ~~Public FIXatdl samples need repo access.~~ *Resolved 2026-11-07, no action
    needed.* Sessions can `git clone` public GitHub repos, so backlog item 2 is
    unblocked.
