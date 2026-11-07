@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -95,3 +97,135 @@ def test_not_a_pdf_names_the_file(tmp_path: Path) -> None:
     bad.write_bytes(b"not a pdf")
     with pytest.raises(PdfError, match=r"bad\.pdf"):
         read_pdf(bad)
+
+
+# --------------------------------------------------------------------------- wrapped tables
+
+
+def _field_table_pdf(tmp_path: Path) -> Path:
+    """Synthetic 4-column field table: wrapped descriptions, blank-line gaps, a group."""
+    cols = (72, 200, 255, 320)  # Field | Tag | Req | Description
+    items: list[tuple[int, int, str]] = [(72, 740, "Alpha Broker FIX Guide - Page 4")]
+    y = 700
+
+    def row(depth: int, name: str, tag: str, req: str, lines: list[str]) -> None:
+        nonlocal y
+        items.extend(
+            [(cols[0] + 14 * depth, y, name), (cols[1], y, tag), (cols[2], y, req)]
+            + [(cols[3], y - 12 * i, text) for i, text in enumerate(lines)]
+        )
+        y -= 12 * len(lines) + 12  # blank-line gap before the next row
+
+    items += [(cols[0], y + 20, "Field"), (cols[1], y + 20, "Tag"), (cols[2], y + 20, "Req")]
+    items += [(cols[3], y + 20, "Description")]
+    row(
+        0,
+        "AlgoStyle",
+        "7001",
+        "Y",
+        ["Chooses the pacing style.", "Wraps onto a second line,", "then a third line."],
+    )
+    row(0, "NoLegs", "7010", "N", ["Number of legs."])
+    items.append((72, y + 12, "(repeating group)"))
+    row(1, "LegRatio", "7011", "N", ["Ratio of this leg.", "Wrapped too."])
+    row(1, "LegSide", "7012", "N", ["Side of this leg."])
+    row(0, "EndTime", "7002", "N", ["When to stop."])
+    p = tmp_path / "field_table.pdf"
+    p.write_bytes(_make_pdf([items]))
+    return p
+
+
+def test_wrapped_field_table_is_one_table_with_merged_rows(tmp_path: Path) -> None:
+    (page,) = read_pdf(_field_table_pdf(tmp_path))
+    (table,) = page.tables
+    names = [r[0] for r in table.rows]
+    assert names == [
+        "Field",
+        "AlgoStyle",
+        "NoLegs (repeating group)",
+        "LegRatio",
+        "LegSide",
+        "EndTime",
+    ]
+    assert [r[1] for r in table.rows] == ["Tag", "7001", "7010", "7011", "7012", "7002"]
+    algo = table.rows[1]
+    assert algo[3] == "Chooses the pacing style. Wraps onto a second line, then a third line."
+    assert table.rows[3][3] == "Ratio of this leg. Wrapped too."
+
+
+def test_group_members_are_deeper_than_their_parent(tmp_path: Path) -> None:
+    (page,) = read_pdf(_field_table_pdf(tmp_path))
+    (table,) = page.tables
+    depth = {r[0]: d for r, d in zip(table.rows, table.depths, strict=True)}
+    assert depth["AlgoStyle"] == 0
+    assert depth["LegRatio"] == depth["LegSide"] == 1
+    assert depth["EndTime"] == 0
+
+
+def test_prose_after_a_table_ends_it() -> None:
+    layout = "\n".join(
+        [
+            "Name      Tag    Req",
+            "A         1      Y",
+            "",
+            "This paragraph is prose and not a row.",
+            "Name2     Tag2   Req2",
+            "B    2    N",
+        ]
+    )
+    tables = extract_tables(layout, 1)
+    assert [len(t.rows) for t in tables] == [2, 2]
+
+
+# --------------------------------------------------------------------------- real spec (opt-in)
+
+_COMMANDER_URL = "https://www.commanderfx.com/downloads/Commander_Rules_Of_Engagement.pdf"
+
+
+def _fetch_public_pdf(corpus_id: str, url: str) -> Path:
+    """Fetch once into the git-ignored corpus cache; skip (no retry) if not a real PDF."""
+    dest = Path(__file__).resolve().parents[1] / "corpus" / "cache" / corpus_id / "doc.pdf"
+    if not dest.exists():
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            subprocess.run(
+                [
+                    "curl",
+                    "-sSL",
+                    "--max-time",
+                    "90",
+                    "-A",
+                    "concord-corpus-fetch/0.1",
+                    "-o",
+                    str(dest),
+                    url,
+                ],
+                check=True,
+                capture_output=True,
+            )
+        except (subprocess.CalledProcessError, OSError) as e:
+            dest.unlink(missing_ok=True)
+            pytest.skip(f"cannot fetch {corpus_id}: {e}")
+    if dest.read_bytes()[:4] != b"%PDF":
+        dest.unlink()
+        pytest.skip(f"{corpus_id}: server did not return a PDF (bot challenge?)")
+    return dest
+
+
+@pytest.mark.skipif(
+    os.environ.get("CONCORD_PUBLIC_SAMPLES") != "1", reason="CONCORD_PUBLIC_SAMPLES not set"
+)
+def test_real_spec_field_table_page() -> None:
+    """Commander FIX (use: ok in corpus/sources.yaml), page 28. Asserts names and tags only."""
+    pages = read_pdf(_fetch_public_pdf("commanderfx-rules-of-engagement", _COMMANDER_URL))
+    page = pages[27]
+    rows = [
+        (r[0].split(" (")[0], r[1], d)
+        for t in page.tables
+        for r, d in zip(t.rows, t.depths, strict=True)
+    ]
+    found = {(name, tag): depth for name, tag, depth in rows}
+    for key in [("TargetStrategy", "847"), ("ExDestination", "100"), ("ClOrdLinkType", "20027")]:
+        assert key in found, f"{key} missing from {sorted(found)[:8]}"
+    assert found[("ClOrdLinkType", "20027")] > found[("NoClOrdLinkID", "20026")]
+    assert len(page.tables) <= 3  # was dozens of 2-row fragments

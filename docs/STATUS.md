@@ -6,11 +6,12 @@
 
 ## Last run
 
-**2026-11-07 (extra runs).** (1) Public FIXatdl samples: 29 files read; 25 round-trip,
-1 clean negative, 3 strict xfails (backlog item 20). (2) Corpus terms review (item 13) after the
-owner widened network access: fetched 25 sources, 14 usable, 4 excluded for restrictive terms or a
-confidential marking (BofA, Cboe, LSEG, Proof; copies deleted), 7 unreachable. Nothing committed
-from third parties.
+**2026-11-07 (daily firing) — PDF field tables.** Worker rewrote `concord.pdf.extract_tables`
+so real field tables with wrapped descriptions, blank-line gaps and repeating-group members read
+as one table with merged rows and a `depth` per row (backlog item 21; no new dependency). Real
+check on Commander FIX page 28: one 17-row table, with `ClOrdLinkType 20027` nested under
+`NoClOrdLinkID`. New item 22: PDF text sometimes splits glyphs (`Co rporates`), which D10 would
+reject. Earlier today: public FIXatdl samples (item 2) and corpus terms review (item 13).
 
 ## Needs owner
 
