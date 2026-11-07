@@ -1,8 +1,8 @@
 # Manifest of public documents used for development and testing.
 # Rules and entry format: corpus/README.md
 # Documents are fetched into corpus/cache/ (git-ignored); never commit them.
-# Entries below are CATALOGUED ONLY (found by web search 2026-11-04 to 2026-11-06). None fetched;
-# publisher terms NOT yet reviewed, so do not use for development until `terms` is filled.
+# Reviewed 2026-11-07 (backlog item 13). `use:` is ok | restricted (terms forbid copying or the
+# document is marked confidential; cache deleted) | unreachable (fetch failed; not reviewed).
 
 sources:
   - id: nyse-pillar-to-algo-fix
@@ -12,8 +12,9 @@ sources:
     kind: pdf
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. © 2025 NYSE Group, Inc. All Rights Reserved. Copyright notice only; no use restriction stated in the document or page footer. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       Venue-to-algo-provider FIX 4.2 routing spec; TargetStrategy at tag 20046 plus effective/expire times. v1.0 Sept 2024 per search snippet.
   - id: nyse-pillar-floor-broker-fix
@@ -23,8 +24,9 @@ sources:
     kind: pdf
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. © 2026 NYSE Group, Inc. All Rights Reserved. Copyright notice only; no use restriction stated in the document or page footer. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       Floor broker orders routed to algo providers. v2.4 March 2025 per search snippet.
   - id: proof-fix-spec
@@ -34,8 +36,9 @@ sources:
     kind: pdf
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. "Copyright © 2021 Proof Services LLC. All rights reserved. This document may not be modified, reproduced, or redistributed without the written permission." Cached copy deleted; do not re-fetch.
     license: null
+    use: restricted
     notes: >-
       Broker FIX 4.2 spec with custom tags; algo parameters in the 20000 range (e.g. 20001). v1.1 Oct 2021 per search snippet.
   - id: cqg-algos-technical-parameters
@@ -45,8 +48,9 @@ sources:
     kind: pdf
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Not reviewed. Fetch returned HTTP 403 on 2026-11-07; not retried or worked around.
     license: null
+    use: unreachable
     notes: >-
       Algo parameter reference; VWAP percent-of-volume default 5%. Algo ids 1000-1009 via tag 847 per search.
   - id: standard-chartered-execution-algorithms
@@ -56,8 +60,9 @@ sources:
     kind: pdf
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. Document carries only an as-is warranty disclaimer (no copying restriction found). It is an RFI-style questionnaire answer, so prose-heavy with few wire tags. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       TWAP/VWAP etc.; lists compulsory parameters. Check whether it carries FIX tags.
   - id: saxo-algo-order-fix-tags
@@ -67,8 +72,9 @@ sources:
     kind: html
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. Copyright © 2026 Saxo Bank A/S. All rights reserved. Copyright notice only; no use restriction stated in the document or page footer. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       Developer-portal page: 847 codes (1002 With Volume, 1003 Implementation Shortfall), AlgoEndTime 12104.
   - id: cqg-algo-engine-support
@@ -78,8 +84,9 @@ sources:
     kind: html
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. CQG help page; no copyright or terms text on the page itself. Copyright notice only; no use restriction stated in the document or page footer. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       FIX algo ids 1000-1006 per search snippet.
   - id: goldman-ria-custody-fix-specs
@@ -89,8 +96,9 @@ sources:
     kind: html
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Not reviewed. Fetch returned HTTP 403 Access Denied on 2026-11-07; not retried or worked around.
     license: null
+    use: unreachable
     notes: >-
       Lists SOR/VWAP/TWAP strategies, tag 8031 required. Points to a separate GSET FIX spec (not located).
   - id: fixsim-algo-tickets
@@ -100,8 +108,9 @@ sources:
     kind: html
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Not reviewed. The network policy refused the host (proxy 403) on 2026-11-07; owner has not allowlisted it.
     license: null
+    use: unreachable
     notes: >-
       Vendor guide to loading broker FIXatdl 1.0/1.1; context only, not a spec source.
   - id: fix-trading-fixatdl-technical-spec
@@ -111,8 +120,9 @@ sources:
     kind: html
     found: 2026-11-04
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Not reviewed. Proxy returned 502 on 2026-11-07; retry later.
     license: null
+    use: unreachable
     notes: >-
       FIXatdl 1.1 spec/XSD/sample downloads; 1.2 RC1 dated 2021-05-20. See STATUS item 6 on licence.
   # Added 2026-11-05 by the PM run (web search only; none fetched; terms not reviewed).
@@ -123,8 +133,9 @@ sources:
     kind: pdf
     found: 2026-11-05
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. The PDF states "This document is confidential, for your private use only, and may not be shared with others." Excluded under CLAUDE.md hard rule 1 (anything marked confidential). Cached copy deleted; do not re-fetch.
     license: null
+    use: restricted
     notes: >-
       Algo suite overview (VWAP, TWAP, POV, IS, participation controls) per search snippet. Check for FIX tags.
   - id: nasdaq-nordic-execution-algorithms-factsheet
@@ -134,8 +145,9 @@ sources:
     kind: pdf
     found: 2026-11-05
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Not reviewed. Fetch failed with a server/transport error (empty reply) on 2026-11-07, also over HTTP/1.1.
     license: null
+    use: unreachable
     notes: >-
       Venue-provided execution algos; factsheet, likely light on FIX detail. Dated 2023-12 by URL.
   - id: saxotraderpro-algoguide
@@ -145,8 +157,9 @@ sources:
     kind: pdf
     found: 2026-11-05
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. No copyright or terms text in the 12-page PDF. Prose guide with no FIX tag numbers, so weak test material. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       Trader-facing companion to saxo-algo-order-fix-tags; pairing the two gives prose + wire tags for one broker.
   - id: tt-fix-strategy-parameters-grp
@@ -156,8 +169,9 @@ sources:
     kind: html
     found: 2026-11-05
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. Footer: Copyright © 2026 Trading Technologies International, Inc. All rights reserved. Copyright notice only; no use restriction stated in the document or page footer. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       Algo params via StrategyParameters group (957-960); TargetStrategyBlock page at
       https://library.tradingtechnologies.com/tt-fix/general/TargetStrategyBlock_ttpo.html.
@@ -169,8 +183,9 @@ sources:
     kind: pdf
     found: 2026-11-05
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Reviewed 2026-11-07. "This content is owned or licensed by Cboe ... and protected by copyright ... Other than for internal business purposes, you may not copy, reproduce, distribute ...". Cached copy deleted; do not re-fetch.
     license: null
+    use: restricted
     notes: >-
       Full venue RoE, FIX 4.2 subset, v2.9.57 dated 2026-08-04 per search. Not algo; Orchestra-phase test doc.
       Also published as Markdown at the same path with .md, which may be easier to cite.
@@ -181,8 +196,9 @@ sources:
     kind: pdf
     found: 2026-11-05
     terms: >-
-      Not reviewed (network policy blocked fetching). Published openly per search result.
+      Not reviewed. Fetch failed with a server/transport error (empty reply) on 2026-11-07, also over HTTP/1.1.
     license: null
+    use: unreachable
     notes: >-
       Venue RoE; prior version v2.02.2 (2026-02-24) also public at
       https://www.nasdaq.com/docs/2026/02/24/Nasdaq-Nordic---FIX-Order-Entry-v.2.02.2.pdf - a real
@@ -194,8 +210,9 @@ sources:
     kind: html
     found: 2026-11-06
     terms: >-
-      Not reviewed (not fetched). Published openly on the publisher's developer docs site.
+      Reviewed 2026-11-07. No copyright or terms text found in the page content. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       FIX 4.2 base with custom tags. TargetStrategy(847) uses letter codes (T = TWAP, V = VWAP);
       TWAP/VWAP require EffectiveTime(168) plus ExpireTime(126) or ParticipationRate(849) per search
@@ -207,9 +224,10 @@ sources:
     kind: pdf
     found: 2026-11-06
     terms: >-
-      Not reviewed (not fetched). Published on the publisher's GitHub Pages site for its
+      Reviewed 2026-11-07. Footer "© QuantReplay" only; no use restriction stated. Fetched into corpus/cache; not redistributed.
       open-source market simulator; check the repo license before use.
     license: null
+    use: ok
     notes: >-
       Simulator venue RoE, not an algo spec. Orchestra-phase test doc.
   # Added 2026-11-06 (second PM firing; web search snippets only; none fetched; terms not reviewed).
@@ -220,8 +238,9 @@ sources:
     kind: pdf
     found: 2026-11-06
     terms: >-
-      Not reviewed (not fetched). Published openly on nyse.com/publicdocs; carries an NYSE Group copyright line.
+      Reviewed 2026-11-07. © 2026 NYSE Group, Inc. All Rights Reserved. Copyright notice only; no use restriction stated in the document or page footer. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       Client-facing gateway RoE. TargetStrategy is a customer-defined string (up to 20 chars) plus
       MinParticipationRate 20049 / MaxParticipationRate 20050 alongside 849, per search snippet.
@@ -233,8 +252,9 @@ sources:
     kind: pdf
     found: 2026-11-06
     terms: >-
-      Not reviewed (not fetched). Published on the publisher's developer portal; check whether a login or terms page applies.
+      Reviewed 2026-11-07. "This document contains information proprietary to Refinitiv and may not be reproduced, disclosed, or used in whole or part without the express written permission of Refinitiv." Cached copy deleted; do not re-fetch.
     license: null
+    use: restricted
     notes: >-
       FX algos: TargetStrategy(847) 1001 = TWAP, 1002 = VWAP, 1003 = Fixing; algo orders must use
       OrdType(40)=E and single-leg only, per search snippet. Good test of a strategy rule on a standard field.
@@ -245,8 +265,9 @@ sources:
     kind: html
     found: 2026-11-06
     terms: >-
-      Not reviewed (fetch blocked by network policy). Public product documentation site.
+      Reviewed 2026-11-07. Footer: Copyright © 2026 EPAM Systems. Copyright notice only; no use restriction stated in the document or page footer. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       Algo orders use OrdType X with BrokerID(76) naming the algo; custom tags such as 7002
       EligibleExchanges, per search snippet. TWAP page at https://ember.deltixlab.com/docs/algos/twap/.
@@ -258,8 +279,9 @@ sources:
     kind: html
     found: 2026-11-06
     terms: >-
-      Not reviewed (fetch blocked by network policy). Public help-site page.
+      Reviewed 2026-11-07. Marketing page, no terms text. Prose only, no wire tags. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       Algos selected by ExDestination(100) values such as WEX-VWAP / WEX-TWAP rather than 847,
       per search snippet. A third strategy-identifier pattern (routing destination).
@@ -270,8 +292,9 @@ sources:
     kind: pdf
     found: 2026-11-06
     terms: >-
-      Not reviewed (not fetched). Offered as a public download per search result.
+      Reviewed 2026-11-07. No copyright or terms text found in the 63-page PDF. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       FX execution strategies keyed by TargetStrategy(847); EffectiveTime start, ExpireTime required
       for GTD. Roughly 2016-2018 per snippet; older but carries tags.
@@ -282,8 +305,9 @@ sources:
     kind: html
     found: 2026-11-06
     terms: >-
-      Not reviewed (not fetched). Public documentation library.
+      Reviewed 2026-11-07. Footer: Copyright © 2026 Trading Technologies International, Inc. All rights reserved. Copyright notice only; no use restriction stated in the document or page footer. Fetched into corpus/cache; not redistributed.
     license: null
+    use: ok
     notes: >-
       Flat-tag TT premium order types (e.g. POV with MaxParticipation 9103, EffectiveTime 168,
       ExpireTime 126) per search snippet; contrast with the 957-group encoding in tt-fix-strategy-parameters-grp.
@@ -294,9 +318,10 @@ sources:
     kind: pdf
     found: 2026-11-06
     terms: >-
-      Not reviewed (not fetched). Publicly posted on the publisher's support site; marked DRAFT, not
+      Not reviewed. Connection reset by the server on 2026-11-07, twice.
       confidential per search title. Re-check for any confidentiality notice before use.
     license: null
+    use: unreachable
     notes: >-
       2011, FIX 4.3. TWAP as a strategy order with value "ST" plus suffixes "P"/"W". Old; weak but
       shows a composite string strategy code.

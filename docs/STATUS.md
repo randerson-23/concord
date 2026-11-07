@@ -6,12 +6,11 @@
 
 ## Last run
 
-**2026-11-07 (extra run) — public FIXatdl samples.** Worker read 29 public sample
-files (atdl4j + FixPortal, MIT, pinned) with the opt-in `CONCORD_PUBLIC_SAMPLES=1` test.
-25 round-trip equal, 1 deliberate negative errors cleanly, 3 are strict xfails: the IR
-rejects shared strategy wire values (2 atdl4j files) and a repeated fixTag (`tz-clock.xml`);
-backlog item 20 decides the rule. Reader errors from IR validation now name the strategy.
-Checks pass; the PR is left for the owner to merge unless told otherwise.
+**2026-11-07 (extra runs).** (1) Public FIXatdl samples: 29 files read; 25 round-trip,
+1 clean negative, 3 strict xfails (backlog item 20). (2) Corpus terms review (item 13) after the
+owner widened network access: fetched 25 sources, 14 usable, 4 excluded for restrictive terms or a
+confidential marking (BofA, Cboe, LSEG, Proof; copies deleted), 7 unreachable. Nothing committed
+from third parties.
 
 ## Needs owner
 
