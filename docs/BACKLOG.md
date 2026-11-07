@@ -28,104 +28,12 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
    Follow-ups: diff Citation changes (provenance drift) and reorder-only
    changes; match strategies by wire value when names change; diff against
    real public FIXatdl samples once item 2 lands.
-2. `todo` **Public FIXatdl samples: read every public sample without error.**
-   Unblocked 2026-11-07: the session can `git clone` public GitHub repos and
-   read `raw.githubusercontent.com`, even though the GitHub API is still scoped.
-   Sources are already in `corpus/sources.yaml` (`atdl4j-test-examples`,
-   `fixportal-fixatdl-fixtures`, both MIT, pinned to a commit).
-   Do this:
-   - `tests/test_public_samples.py` fetches each repo into `corpus/cache/<id>/`
-     with `git clone --depth 1` and then `git checkout <pinned sha>`, or with
-     `git fetch --depth 1 origin <sha>`. Reuse the cache if it is present. Skip
-     the whole module when the fetch fails (offline). It never runs in CI by
-     default: gate it on `CONCORD_PUBLIC_SAMPLES=1`, like the XSD opt-in.
-   - Parametrize over the sample files: the 15 `src/test/resources/*.xml` in
-     atdl4j, and the FixPortal `*.xml` / `*.atdl.xml` fixtures. Expect
-     `malformed.atdl.xml` and `invalid-schema.xml` to raise a clean
-     `concord` error that names the location, not to crash. Every other file
-     must read, write back to FIXatdl, and re-read to an equal `AlgoSpec`.
-   - Fix the reader or writer gaps this exposes. If a gap is too big for one
-     firing, mark that file `xfail` with the reason and add a backlog item.
-   - Do not commit the files (hard rule 2). Record the fetch approach as a
-     DECISIONS entry so the Orchestra XSD (item 9b) follows it.
-   Acceptance: `CONCORD_PUBLIC_SAMPLES=1 uv run pytest tests/test_public_samples.py`
-   passes, with any xfails listed in STATUS. Plain `uv run pytest` still passes
-   with the module skipped. Why first: this is the first check of the reader
-   against FIXatdl that we did not write. Item 1's follow-up (diffing real
-   samples) also needs it.
-3. `done 2026-11-02` **PDF text layer.** `concord.pdf`: page-aware text and table
-   extraction that keeps page numbers, for citations. Use `pypdf` or
-   `pdfplumber` (permissive). Not PyMuPDF (AGPL). Test against a synthetic PDF
-   generated in the test itself.
-   Done: `concord.pdf` (`read_pdf`, `extract_tables`, `normalize`); tables are a
-   layout-gap heuristic. Follow-up: ruled-table detection via pdfplumber if the
-   heuristic proves weak on real specs.
-4. `done 2026-11-03` **Citation verifier.** Given an `AlgoSpec` and its source PDF,
-   confirm every citation's `quote` actually appears on its cited `page`
-   (whitespace- and hyphenation-tolerant). Report failures. This is the
-   deterministic guard against an LLM inventing a rule — it is the core of
-   the accuracy story, so make it strict.
-   Done: `concord.verify` + `concord verify spec.json --source ID=PDF` (exit 2 on
-   any failure). Follow-ups: check `Citation.locator`; flag quotes that match
-   on several pages when none is cited.
-5. `done 2026-11-04` **LLM extraction scaffold.** `concord.extract`: chunk a PDF by page,
-   ask Claude for IR fragments with mandatory page+quote citations via
-   structured output, merge fragments into one `AlgoSpec`, run the citation
-   verifier, route anything unverified to a review list. Use the latest Claude
-   model. Tests run against recorded responses so no API key is needed in CI.
-   Live runs `blocked: ANTHROPIC_API_KEY` until the owner adds it.
-   Done: `concord.extract` (`extract_spec`, `Backend` protocol, `ReplayBackend`,
-   `AnthropicBackend`) and `concord extract PDF --id --title --out [--replay DIR]`
-   (exit 2 if the review list is non-empty). Facts without a verified citation
-   never enter the spec. Follow-ups: tune prompt on a real spec once a key exists
-   (item 5b); per-page calls miss cross-page context (consider a second pass that
-   resolves "see table 3"); cost/token accounting.
-6. `done 2026-11-05` **Static spec site, core: `concord site SPEC OUT_DIR` renders one
-   `AlgoSpec` as deterministic static HTML with every fact linked to its source
-   page.** This starts the free public library, the funnel in business plan §5/§8.
-   Nobody else offers a public spec browser
-   (`docs/research/competitors.md`). It needs no owner input.
-   Acceptance:
-   - New `src/concord/site.py` using the stdlib only (`html.escape`, no template
-     engine, no new dependency). All IR text is escaped. Inline CSS, no JS, no
-     external assets, so the output works from `file://`.
-   - `SPEC` accepts IR JSON or FIXatdl (reuse `cli._load`). Output is `index.html`
-     (provider, description, identifier tag, a table of strategies with
-     name / label / wire value / parameter count) plus
-     `strategies/<slug>.html` for each strategy. Each strategy page shows a
-     parameter table (name, FIX tag, type, required, default, min/max, enum
-     values as `wire — label`, mutable on cancel/replace), rules (StrategyEdits as
-     readable expressions such as `Side == 1 AND OrderQty > 0`) and applicability.
-     Slugs are unique even when two names slug the same.
-   - Citations: each cited fact shows `[source-id p.N]`. It links to
-     `SourceDocument.url#page=N` when the source has a URL, and the quote goes in a
-     `title` attribute. Facts with no citation get a visible `uncited` marker.
-     Concord does not hide guesses.
-   - Deterministic: render the same spec twice and get byte-identical trees (no
-     timestamps, IR order kept).
-   - `tests/test_site.py` uses the existing `tests/fixtures/fixatdl/example_broker.xml`
-     plus one synthetic IR with citations. It covers escaping (a `<script>` in a
-     description comes out inert), citation links and `uncited` markers,
-     determinism, slug collisions, and `concord site` exiting 0 and writing the
-     expected files.
-   Done: `concord.site` (`render_site`, `write_site`) and `concord site SPEC OUT_DIR`;
-   `tests/test_site.py`. Only http(s) source URLs become links. Follow-ups: item 8
-   (cxl/rpl badge), item 12 (library index); add a nav link between strategies.
-7. `done 2026-11-06` **Diff: match strategies by wire value when names change.** A
-   removed+added strategy pair with the same `wire_value` is reported as a rename.
-   The rename is cosmetic. Changes inside it are diffed as usual. This follows the
-   D9 parameter rule, so it extends D9 and does not reverse it. Record it as a
-   D9 addendum in DECISIONS. Why first: diff is the paid feature, and public specs
-   show wire values are the stable identity while names and labels drift
-   (`docs/research/customer-signal.md`, 2026-11-06).
-   Acceptance:
-   - Tests in `tests/test_diff.py`: rename alone (cosmetic only, text report reads
-     `renamed 'Old' -> 'New' (wire value 1001)`); rename plus a removed parameter
-     (breaking, reported under the new name); two removed strategies sharing a
-     wire value (no match, reported as removed/added); JSON output carries the
-     old and new names.
-   - CLI test: `concord diff old.json new.json --fail-on-breaking` exits 0 for a
-     rename alone and 2 for rename plus removed parameter.
+2. `done 2026-11-07` **Public FIXatdl samples: read every public sample without error.**
+   Done: `tests/test_public_samples.py` (opt-in `CONCORD_PUBLIC_SAMPLES=1`, fetch
+   approach in D15). 29 files: 25 read, write back and re-read equal; `invalid-schema.xml`
+   raises a clean `FixatdlError`; 3 strict xfails (item 20). `malformed.atdl.xml` is not a
+   negative: it parses (its own header says so). The reader now wraps IR validation errors
+   as `FixatdlError` naming the strategy. Follow-up: diff real samples (item 1 follow-up).
 8. `todo` **Site: mark parameters that are not mutable on cancel/replace.** Show a
    badge wherever `mutable_on_cxl_rpl is False`, and add a "cannot amend" summary
    on each strategy page. Customer signal says custom tags breaking cxl/rpl is a
@@ -167,6 +75,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     Orchestra file to check the writer's structure against.
     Acceptance: CLI test writes the file and exits 0; XPath test for the message
     members; determinism test.
+20. `todo` **IR: strategies that share a wire value or a fixTag.** Three public files
+    are rejected by IR uniqueness checks: atdl4j `Example Strategy Filtering.xml` and
+    `Example StrategyPanel Tests2.xml` (many strategies, same `wireValue`, distinguished by
+    region/`fixMsgType` filters) and FixPortal `tz-clock.xml` (two parameters on tag 7157, one
+    active per state rule). Decide the identity rule (wire value plus applicability? tag per
+    state?) and write it as a D-entry before relaxing the validators; that changes diff
+    matching (D9). Remove the strict xfails in `test_public_samples.py` when fixed.
+    Acceptance: all 29 samples pass with no xfail; diff tests still pass.
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.

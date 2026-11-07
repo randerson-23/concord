@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from lxml import etree
+from pydantic import ValidationError
 
 from concord.fixatdl.schema import BOOLEAN_CONTROLS, ENUM_CONTROLS, NS_XSI, type_from_xsi
 from concord.ir import (
@@ -65,6 +66,14 @@ def read_fixatdl(data: bytes, source: SourceDocument | None = None) -> ReadResul
 
 
 # --------------------------------------------------------------------------- helpers
+
+
+def _first_error(exc: ValidationError) -> str:
+    """The IR's own message for the first failed check, without pydantic's framing."""
+    err = exc.errors()[0]
+    msg = str(err["msg"]).removeprefix("Value error, ")
+    loc = ".".join(str(x) for x in err["loc"])
+    return f"{msg} (at {loc})" if loc else msg
 
 
 def _local(el: etree._Element) -> str:
@@ -139,16 +148,19 @@ class _Reader:
             raise FixatdlError("document defines no <Strategy>")
 
         providers = {s.provider_id for s in strategies if s.provider_id}
-        spec = AlgoSpec(
-            provider=providers.pop() if len(providers) == 1 else None,
-            strategy_identifier_tag=tag,
-            version_identifier_tag=_int(
-                root.get("versionIdentifierTag"), "Strategies/@versionIdentifierTag"
-            ),
-            description=_description(root),
-            strategies=strategies,
-            sources=[self.source] if self.source else [],
-        )
+        try:
+            spec = AlgoSpec(
+                provider=providers.pop() if len(providers) == 1 else None,
+                strategy_identifier_tag=tag,
+                version_identifier_tag=_int(
+                    root.get("versionIdentifierTag"), "Strategies/@versionIdentifierTag"
+                ),
+                description=_description(root),
+                strategies=strategies,
+                sources=[self.source] if self.source else [],
+            )
+        except ValidationError as exc:
+            raise FixatdlError(f"Strategies: {_first_error(exc)}") from exc
         return ReadResult(spec=spec, warnings=self.warnings)
 
     # -- strategy -----------------------------------------------------------
@@ -172,7 +184,10 @@ class _Reader:
             if e.get("id"):
                 local_edits[e.get("id")] = e
 
-        params = [self._parameter(p, where) for p in _children(el, "Parameter")]
+        try:
+            params = [self._parameter(p, where) for p in _children(el, "Parameter")]
+        except ValidationError as exc:
+            raise FixatdlError(f"{where}: {_first_error(exc)}") from exc
         by_name = {p.name: p for p in params}
 
         layout = _child(el, "StrategyLayout")
@@ -184,7 +199,24 @@ class _Reader:
             for i, se in enumerate(_children(el, "StrategyEdit"), start=1)
         ]
 
-        strategy = Strategy(
+        try:
+            strategy = self._build_strategy(el, name, wire, params, edits, where)
+        except ValidationError as exc:
+            raise FixatdlError(f"{where}: {_first_error(exc)}") from exc
+        for f in sorted(strategy.dangling_edit_fields()):
+            self.warnings.append(f"{where}: validation rule refers to unknown field {f!r}")
+        return strategy
+
+    def _build_strategy(
+        self,
+        el: etree._Element,
+        name: str,
+        wire: str,
+        params: list[Parameter],
+        edits: list[StrategyEdit],
+        where: str,
+    ) -> Strategy:
+        return Strategy(
             name=name,
             wire_value=wire,
             version=el.get("version") or "1",
@@ -198,9 +230,6 @@ class _Reader:
             edits=edits,
             citations=self._cite(where),
         )
-        for f in sorted(strategy.dangling_edit_fields()):
-            self.warnings.append(f"{where}: validation rule refers to unknown field {f!r}")
-        return strategy
 
     def _applicability(self, el: etree._Element) -> Applicability:
         def inc(node: etree._Element, code_attr: str) -> Inclusion:

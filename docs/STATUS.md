@@ -6,11 +6,12 @@
 
 ## Last run
 
-**2026-11-06 — diff rename matching.** PM re-ordered the backlog (wire_encoding
-before the Orchestra writer; item 9 split), catalogued 2 more public sources
-(18 of 25). Worker made `concord diff` match strategies by wire value and report
-a cosmetic `strategy_renamed` (D9 addendum); ambiguous wire values stay
-removed/added. Tests pass.
+**2026-11-07 (extra run) — public FIXatdl samples.** Worker read 29 public sample
+files (atdl4j + FixPortal, MIT, pinned) with the opt-in `CONCORD_PUBLIC_SAMPLES=1` test.
+25 round-trip equal, 1 deliberate negative errors cleanly, 3 are strict xfails: the IR
+rejects shared strategy wire values (2 atdl4j files) and a repeated fixTag (`tz-clock.xml`);
+backlog item 20 decides the rule. Reader errors from IR validation now name the strategy.
+Checks pass; the PR is left for the owner to merge unless told otherwise.
 
 ## Needs owner
 
