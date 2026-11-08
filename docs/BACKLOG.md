@@ -44,12 +44,32 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     by URL into `corpus/cache`, skipped if the server returns non-PDF). Limits: a description
     line printed above its row (vertically centred cells) attaches to the previous row; a
     page-top fragment of a row split across pages is a partial row.
-22. `todo` **Verifier: PDF text with split glyphs.** The Commander FIX running header
-    extracts as `Co rporates`, and field names as `TrdRegPublicationTy pe`. `normalize`
-    keeps the space, so a correct quote of `Corporates` would fail D10. Do not loosen D10.
-    Option: when a quote fails, retry against a space-stripped form of both sides, and report
-    such a match as a distinct `verified (glyph gap)` status for review. Needs an owner-visible
-    DECISIONS entry. Acceptance: tests for the split-word case; plain mismatches still fail.
+22. `todo` **PDF tables: repair split glyphs in cells from the plain text.** PM probe
+    2026-11-08 on `commanderfx-rules-of-engagement`: pypdf's plain extraction has **0**
+    split words (`Co rporates`, `…Ty pe`), and `extraction_mode="layout"` has **59**.
+    The verifier (`verify.py:131`) matches against plain `Page.text`, so D10 is not
+    affected and needs no change or owner entry. The damage is in table cells, which
+    come from the layout text: parameter names such as `TrdRegPublicationTy pe` would
+    enter the IR misspelled. This replaces the earlier verifier-side proposal, which
+    would have loosened D10.
+    Do this:
+    - In `concord.pdf`, after `extract_tables`, repair each cell against the same
+      page's plain text. When adjacent tokens joined without spaces equal one word
+      that appears in the plain text, and that split form does not appear in the
+      plain text, replace them with the plain word. Leave genuine two-word cells such
+      as `Rules of` alone, because the plain text keeps their space.
+      Deterministic and bounded: only join up to 3 adjacent tokens, and only when the
+      result is in the page's plain-text word set.
+    - Synthetic test: build a `Page` by hand (no PDF needed) whose layout text splits
+      `OrderCapacity` into `OrderCap acity` and whose plain text has it whole. Assert
+      the repaired cell. Add a control case where the plain text really has two words,
+      which stays split.
+    - Extend the opt-in Commander test from item 21: no cell on page 28 contains a
+      token that the plain text joins. Assert names and tags only.
+    - Extraction prompt (`extract.py:151`): tell the model to quote from the plain
+      page text, not the layout text, because layout quotes can carry split glyphs.
+      Update the recorded-response tests if the prompt text is pinned.
+    Acceptance: new tests pass; item 21 tests still pass; D10 untouched.
 8. `todo` **Site: mark parameters that are not mutable on cancel/replace.** Show a
    badge wherever `mutable_on_cxl_rpl is False`, and add a "cannot amend" summary
    on each strategy page. Customer signal says custom tags breaking cxl/rpl is a
