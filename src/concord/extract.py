@@ -45,7 +45,8 @@ documents into a JSON structure. Rules:
 - Extract only what the page states. Never infer or fill in from general knowledge.
 - Every strategy, parameter, enum value and rule MUST carry at least one citation:
   source_id (given), the page number (given), and `quote`: a short passage copied
-  VERBATIM from the page text. Do not paraphrase the quote.
+  VERBATIM from the `--- page text ---` section. Do not quote the layout text: its
+  words can carry stray spaces. Do not paraphrase the quote.
 - Wire values, tags, defaults and bounds are strings exactly as printed.
 - If the page contains no algo specification content, return {"strategies": []}.
 """

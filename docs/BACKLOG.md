@@ -44,12 +44,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     by URL into `corpus/cache`, skipped if the server returns non-PDF). Limits: a description
     line printed above its row (vertically centred cells) attaches to the previous row; a
     page-top fragment of a row split across pages is a partial row.
-22. `todo` **Verifier: PDF text with split glyphs.** The Commander FIX running header
-    extracts as `Co rporates`, and field names as `TrdRegPublicationTy pe`. `normalize`
-    keeps the space, so a correct quote of `Corporates` would fail D10. Do not loosen D10.
-    Option: when a quote fails, retry against a space-stripped form of both sides, and report
-    such a match as a distinct `verified (glyph gap)` status for review. Needs an owner-visible
-    DECISIONS entry. Acceptance: tests for the split-word case; plain mismatches still fail.
+22. `done 2026-11-08` **PDF tables: repair split glyphs in cells from the plain text.**
+    Done: `concord.pdf.repair_split_glyphs`, applied to every table in `read_pdf`. A run of 2-3
+    adjacent cell tokens is joined only when the joined word is in the page's plain text and the
+    split form is not. Commander FIX page 28 now yields `TrdRegPublicationType` and
+    `TrdRegPublicationReason`. The extraction system prompt now says to quote from the page-text
+    section, not the layout text. D10 untouched. Tests: split, three-way split, genuine two-word
+    cell kept, unrelated cell untouched, and the opt-in real-page check. Limit: a cell broken
+    by a page boundary (`ansactionId`) is a fragment, not a repairable split.
 8. `todo` **Site: mark parameters that are not mutable on cancel/replace.** Show a
    badge wherever `mutable_on_cxl_rpl is False`, and add a "cannot amend" summary
    on each strategy page. Customer signal says custom tags breaking cxl/rpl is a

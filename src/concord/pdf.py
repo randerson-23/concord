@@ -139,6 +139,41 @@ def extract_tables(layout_text: str, page: int, min_rows: int = 2) -> list[Table
     return tables
 
 
+_WORD = re.compile(r"[\w'\u2019-]+")
+_MAX_JOIN = 3  # most adjacent tokens a split glyph can span
+
+
+def repair_split_glyphs(table: Table, plain_text: str) -> Table:
+    """Rejoin words that layout extraction split mid-word (``TrdRegPublicationTy pe``).
+
+    pypdf's layout mode can insert a space inside a word; its plain mode does not. A run
+    of 2-3 adjacent cell tokens is replaced by their concatenation only when that word
+    appears in the page's plain text *and* the split form does not. Genuine two-word
+    cells therefore stay as they are. Cells are never rewritten from anywhere else.
+    """
+    words = set(_WORD.findall(plain_text))
+    flat = " ".join(plain_text.split())
+
+    def fix(cell: str) -> str:
+        tokens = cell.split(" ")
+        out: list[str] = []
+        i = 0
+        while i < len(tokens):
+            for n in range(min(_MAX_JOIN, len(tokens) - i), 1, -1):
+                run = tokens[i : i + n]
+                if " ".join(run) not in flat and "".join(run) in words:
+                    out.append("".join(run))
+                    i += n
+                    break
+            else:
+                out.append(tokens[i])
+                i += 1
+        return " ".join(out)
+
+    rows = [[fix(c) for c in row] for row in table.rows]
+    return Table(page=table.page, rows=rows, depths=list(table.depths))
+
+
 def read_pdf(path: str | Path) -> list[Page]:
     """Extract every page. Raises :class:`PdfError` naming the file on failure."""
     p = Path(path)
@@ -150,7 +185,8 @@ def read_pdf(path: str | Path) -> list[Page]:
         for i, page in enumerate(reader.pages, start=1):
             text = page.extract_text() or ""
             layout = page.extract_text(extraction_mode="layout") or ""
-            pages.append(Page(i, text, layout, extract_tables(layout, i)))
+            tables = [repair_split_glyphs(t, text) for t in extract_tables(layout, i)]
+            pages.append(Page(i, text, layout, tables))
         return pages
     except PdfError:
         raise

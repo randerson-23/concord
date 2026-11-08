@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import itertools
 import os
+import re
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from concord.pdf import PdfError, extract_tables, normalize, read_pdf
+from concord.pdf import PdfError, Table, extract_tables, normalize, read_pdf, repair_split_glyphs
 
 
 def _make_pdf(pages: list[list[tuple[int, int, str]]]) -> bytes:
@@ -177,6 +179,37 @@ def test_prose_after_a_table_ends_it() -> None:
     assert [len(t.rows) for t in tables] == [2, 2]
 
 
+# --------------------------------------------------------------------------- split glyphs
+
+
+def test_split_word_in_a_cell_is_repaired_from_plain_text() -> None:
+    table = Table(
+        page=1, rows=[["OrderCap acity", "528", "N", "Capacity of the order"]], depths=[0]
+    )
+    plain = "OrderCapacity 528 N Capacity of the order"
+    (row,) = repair_split_glyphs(table, plain).rows
+    assert row == ["OrderCapacity", "528", "N", "Capacity of the order"]
+
+
+def test_three_way_split_is_repaired() -> None:
+    table = Table(page=1, rows=[["Trd RegPublication Type", "2669"]], depths=[0])
+    assert repair_split_glyphs(table, "TrdRegPublicationType 2669").rows[0][0] == (
+        "TrdRegPublicationType"
+    )
+
+
+def test_genuine_two_word_cell_is_left_alone() -> None:
+    table = Table(page=1, rows=[["Order Capacity", "528"]], depths=[0])
+    plain = "Order Capacity 528 and elsewhere OrderCapacity"
+    assert repair_split_glyphs(table, plain).rows[0][0] == "Order Capacity"
+
+
+def test_unrelated_cell_text_is_untouched() -> None:
+    table = Table(page=1, rows=[["Rules of", "engagement"]], depths=[1])
+    repaired = repair_split_glyphs(table, "something else entirely")
+    assert repaired.rows == table.rows and repaired.depths == [1]
+
+
 # --------------------------------------------------------------------------- real spec (opt-in)
 
 _COMMANDER_URL = "https://www.commanderfx.com/downloads/Commander_Rules_Of_Engagement.pdf"
@@ -229,3 +262,10 @@ def test_real_spec_field_table_page() -> None:
         assert key in found, f"{key} missing from {sorted(found)[:8]}"
     assert found[("ClOrdLinkType", "20027")] > found[("NoClOrdLinkID", "20026")]
     assert len(page.tables) <= 3  # was dozens of 2-row fragments
+    words = set(re.findall(r"[\w'\u2019-]+", page.text))
+    for table in page.tables:
+        for row in table.rows:
+            tokens = row[0].split(" ")
+            for a, b in itertools.pairwise(tokens):
+                if a + b in words and f"{a} {b}" not in page.text:
+                    pytest.fail(f"split glyph left in a name cell: {row[0]!r}")
