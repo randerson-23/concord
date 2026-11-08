@@ -44,32 +44,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     by URL into `corpus/cache`, skipped if the server returns non-PDF). Limits: a description
     line printed above its row (vertically centred cells) attaches to the previous row; a
     page-top fragment of a row split across pages is a partial row.
-22. `todo` **PDF tables: repair split glyphs in cells from the plain text.** PM probe
-    2026-11-08 on `commanderfx-rules-of-engagement`: pypdf's plain extraction has **0**
-    split words (`Co rporates`, `…Ty pe`), and `extraction_mode="layout"` has **59**.
-    The verifier (`verify.py:131`) matches against plain `Page.text`, so D10 is not
-    affected and needs no change or owner entry. The damage is in table cells, which
-    come from the layout text: parameter names such as `TrdRegPublicationTy pe` would
-    enter the IR misspelled. This replaces the earlier verifier-side proposal, which
-    would have loosened D10.
-    Do this:
-    - In `concord.pdf`, after `extract_tables`, repair each cell against the same
-      page's plain text. When adjacent tokens joined without spaces equal one word
-      that appears in the plain text, and that split form does not appear in the
-      plain text, replace them with the plain word. Leave genuine two-word cells such
-      as `Rules of` alone, because the plain text keeps their space.
-      Deterministic and bounded: only join up to 3 adjacent tokens, and only when the
-      result is in the page's plain-text word set.
-    - Synthetic test: build a `Page` by hand (no PDF needed) whose layout text splits
-      `OrderCapacity` into `OrderCap acity` and whose plain text has it whole. Assert
-      the repaired cell. Add a control case where the plain text really has two words,
-      which stays split.
-    - Extend the opt-in Commander test from item 21: no cell on page 28 contains a
-      token that the plain text joins. Assert names and tags only.
-    - Extraction prompt (`extract.py:151`): tell the model to quote from the plain
-      page text, not the layout text, because layout quotes can carry split glyphs.
-      Update the recorded-response tests if the prompt text is pinned.
-    Acceptance: new tests pass; item 21 tests still pass; D10 untouched.
+22. `done 2026-11-08` **PDF tables: repair split glyphs in cells from the plain text.**
+    Done: `concord.pdf.repair_split_glyphs`, applied to every table in `read_pdf`. A run of 2-3
+    adjacent cell tokens is joined only when the joined word is in the page's plain text and the
+    split form is not. Commander FIX page 28 now yields `TrdRegPublicationType` and
+    `TrdRegPublicationReason`. The extraction system prompt now says to quote from the page-text
+    section, not the layout text. D10 untouched. Tests: split, three-way split, genuine two-word
+    cell kept, unrelated cell untouched, and the opt-in real-page check. Limit: a cell broken
+    by a page boundary (`ansactionId`) is a fragment, not a repairable split.
 8. `todo` **Site: mark parameters that are not mutable on cancel/replace.** Show a
    badge wherever `mutable_on_cxl_rpl is False`, and add a "cannot amend" summary
    on each strategy page. Customer signal says custom tags breaking cxl/rpl is a

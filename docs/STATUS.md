@@ -6,12 +6,12 @@
 
 ## Last run
 
-**2026-11-07 (daily firing) — PDF field tables.** Worker rewrote `concord.pdf.extract_tables`
-so real field tables with wrapped descriptions, blank-line gaps and repeating-group members read
-as one table with merged rows and a `depth` per row (backlog item 21; no new dependency). Real
-check on Commander FIX page 28: one 17-row table, with `ClOrdLinkType 20027` nested under
-`NoClOrdLinkID`. New item 22: PDF text sometimes splits glyphs (`Co rporates`), which D10 would
-reject. Earlier today: public FIXatdl samples (item 2) and corpus terms review (item 13).
+**2026-11-08 (daily firing) — split-glyph repair.** Worker added `repair_split_glyphs` so table
+cells such as `TrdRegPublicationTy pe` are repaired against the page's plain text (bounded: join
+up to 3 tokens, only when the whole word is in the plain text and the split form is not). The
+extraction prompt now tells the model to quote from the page-text section. D10 untouched; no new
+dependency. Yesterday: PDF field tables (item 21), FIXatdl public samples (item 2), corpus terms
+review (item 13).
 
 ## Needs owner
 
