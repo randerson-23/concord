@@ -60,29 +60,15 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
    Acceptance: a site test with one immutable parameter checks the badge and the
    summary line; a test checks each strategy page links back to `index.html`;
    determinism test still passes.
-23. `todo` **Site: rendered change report (`concord site NEW OUT_DIR --diff OLD`).**
-    Split from item 12. The owner asked on 2026-11-08 what could be demoed. The
-    PM had to hand-build a page from `concord diff --format json`, because Concord
-    cannot render a change report itself, and the change report is the paid
-    feature (item 1). Make it native.
-    Do this:
-    - `--diff OLD` (FIXatdl or IR JSON, reuse `cli._load`) writes `changes.html` and
-      links it from `index.html` with the summary counts.
-    - The page has a summary line (`N breaking · N additive · N cosmetic`), then
-      one section per severity in the order breaking, additive, cosmetic. Each
-      change shows its location as `Strategy › Parameter`, the message, and
-      old → new when both exist. The raw `path` stays visible in small type.
-      Escape everything. No JS.
-    - Mark each severity by colour and by a text label, so it reads in
-      greyscale too. Move the site's inline CSS into one shared `style.css` with
-      light and dark colours (`prefers-color-scheme`). It still works from
-      `file://`.
-    Acceptance: `tests/test_site.py` builds a v1/v2 pair in the test (edit the
-    fixture's IR in memory, e.g. remove a parameter, narrow a range, add an enum
-    value, rename a strategy with the same wire value). Assert one change of each
-    severity appears under the right heading, the index links `changes.html` with
-    the counts, escaping holds, and output is byte-identical across two runs.
-    Without `--diff`, no `changes.html` is written.
+23. `done 2026-11-09` **Site: rendered change report (`concord site NEW OUT_DIR --diff OLD`).**
+    Done: `render_site(spec, old=None)` / `write_site(..., old)` and `--diff OLD` write
+    `changes.html` (summary line, then Breaking, Additive, Cosmetic sections; each change shows
+    `Strategy › Parameter`, message, old → new, and the raw path in small type) and link it from
+    `index.html` with the counts. Severity is shown by colour and a text label. The inline CSS
+    moved to one shared `style.css` with light and dark colours; every page links it. Without
+    `--diff` no `changes.html` is written. Tests: one change per severity under the right
+    heading, escaping, index link and counts, byte-identical output, CLI. Follow-ups: item 12
+    (multi-spec library index); a strategy-level view of the report; item 8 still todo.
 10. `todo` **IR: parameter encoding.** Add a `wire_encoding` field to the strategy
     or spec, with values `tag` / `848-pairs` / `957-group`. Public specs use all
     three (TT uses 957–960, the FIX 4.4 extension uses 848, most use flat custom
