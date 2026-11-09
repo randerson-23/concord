@@ -60,6 +60,29 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
    Acceptance: a site test with one immutable parameter checks the badge and the
    summary line; a test checks each strategy page links back to `index.html`;
    determinism test still passes.
+23. `todo` **Site: rendered change report (`concord site NEW OUT_DIR --diff OLD`).**
+    Split from item 12. The owner asked on 2026-11-08 what could be demoed. The
+    PM had to hand-build a page from `concord diff --format json`, because Concord
+    cannot render a change report itself, and the change report is the paid
+    feature (item 1). Make it native.
+    Do this:
+    - `--diff OLD` (FIXatdl or IR JSON, reuse `cli._load`) writes `changes.html` and
+      links it from `index.html` with the summary counts.
+    - The page has a summary line (`N breaking · N additive · N cosmetic`), then
+      one section per severity in the order breaking, additive, cosmetic. Each
+      change shows its location as `Strategy › Parameter`, the message, and
+      old → new when both exist. The raw `path` stays visible in small type.
+      Escape everything. No JS.
+    - Mark each severity by colour and by a text label, so it reads in
+      greyscale too. Move the site's inline CSS into one shared `style.css` with
+      light and dark colours (`prefers-color-scheme`). It still works from
+      `file://`.
+    Acceptance: `tests/test_site.py` builds a v1/v2 pair in the test (edit the
+    fixture's IR in memory, e.g. remove a parameter, narrow a range, add an enum
+    value, rename a strategy with the same wire value). Assert one change of each
+    severity appears under the right heading, the index links `changes.html` with
+    the counts, escaping holds, and output is byte-identical across two runs.
+    Without `--diff`, no `changes.html` is written.
 10. `todo` **IR: parameter encoding.** Add a `wire_encoding` field to the strategy
     or spec, with values `tag` / `848-pairs` / `957-group`. Public specs use all
     three (TT uses 957–960, the FIX 4.4 extension uses 848, most use flat custom
@@ -91,6 +114,10 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     demand like the FIXatdl XSD is also fine. The worker picks one and records it.
     `repository/src/test/resources/examples/mit_2016.xml` is a reference
     Orchestra file to check the writer's structure against.
+    StrategyEdits: Orchestra writes conditional rules in its Score DSL
+    (`when` expressions). The FIX Trading Community moved its own standards work
+    onto Orchestra DSL tooling in July 2026, so emit rules as Score DSL there.
+    Do not drop them, and do not invent a custom extension.
     Acceptance: CLI test writes the file and exits 0; XPath test for the message
     members; determinism test.
 20. `todo` **IR: strategies that share a wire value or a fixTag.** Three public files
@@ -105,8 +132,8 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.
 12. `todo` **Site: library index.** `concord site` accepts several specs and writes a
-    top-level index of providers and strategies across specs. It also takes
-    `--diff OLD` to add a rendered change report page. This builds on item 6.
+    top-level index of providers and strategies across specs. This builds on
+    item 6. The `--diff` part moved to item 23.
     Acceptance: multi-spec test plus determinism test.
 19. `todo` **Diff: citation (provenance) drift.** Report a fact whose citation
     page or quote changed while its value did not, as *cosmetic* with a

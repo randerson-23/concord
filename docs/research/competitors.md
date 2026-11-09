@@ -49,3 +49,16 @@ member-only, manual tool aimed at publishers. Our free public spec browser
   FIXatdl, so it consumes our output and is a possible partner. Watch it for
   any authoring or conversion features.
   <https://github.com/FixPortal/fixportal-fixatdl>
+
+## 2026-11-09 (interim note)
+
+- **The FIX Trading Community moved FIX Standard development onto Orchestra DSL
+  tooling from Atomic Wire Technology (announced 7 July 2026).** Changes are now
+  written in a machine-readable DSL, validated in a build, and published as derived
+  artefacts. This tooling is for maintaining the FIX standard, not broker algo
+  specs, and nothing found takes PDF input. It does make Atomic Wire the closest
+  Orchestra-tooling vendor to watch: as a competitor if it moves into firm-level
+  specs, or as a partner.
+  <https://a-teaminsight.com/briefs/fix-trading-community-adopts-automated-development-workflow-for-the-fix-standard/>
+  *Implication:* Orchestra output from Concord should use the Score DSL for
+  conditional rules (backlog 9b), so it fits the tooling the community now uses.
