@@ -1,6 +1,6 @@
 """Static spec site: render one ``AlgoSpec`` as deterministic, self-contained HTML.
 
-Stdlib only, inline CSS, no JS and no external assets, so the output works from
+Stdlib only, one shared ``style.css``, no JS and no external assets, so the output works from
 ``file://``. All IR text is escaped. Every fact shows its citation, or a visible
 ``uncited`` marker: Concord does not hide guesses.
 """
@@ -11,17 +11,30 @@ import re
 from html import escape
 from pathlib import Path
 
+from concord.diff import SEVERITIES, Change, DiffReport, diff_specs
 from concord.ir import AlgoSpec, Citation, Edit, Parameter, Strategy
 
-_CSS = """
-body{font:15px/1.5 system-ui,sans-serif;margin:2rem auto;max-width:70rem;padding:0 1rem}
+STYLE_CSS = """\
+:root{--bg:#fff;--fg:#1a1a1a;--line:#ccc;--head:#f3f3f3;--code:#f3f3f3;--badge:#eee;--warn:#a40;
+--breaking:#b00020;--additive:#1b6e2d;--cosmetic:#555;--link:#0b5cad}
+@media (prefers-color-scheme:dark){:root{--bg:#161616;--fg:#e8e8e8;--line:#444;--head:#242424;
+--code:#242424;--badge:#333;--warn:#ffb070;--breaking:#ff8a96;--additive:#7fd98f;
+--cosmetic:#b5b5b5;--link:#7db7ff}}
+body{font:15px/1.5 system-ui,sans-serif;margin:2rem auto;max-width:70rem;padding:0 1rem;
+background:var(--bg);color:var(--fg)}
+a{color:var(--link)}
 table{border-collapse:collapse;width:100%;margin:1rem 0}
-th,td{border:1px solid #ccc;padding:.3rem .5rem;text-align:left;vertical-align:top}
-th{background:#f3f3f3}
-code{background:#f3f3f3;padding:0 .2rem}
+th,td{border:1px solid var(--line);padding:.3rem .5rem;text-align:left;vertical-align:top}
+th{background:var(--head)}
+code{background:var(--code);padding:0 .2rem}
 .cite{font-size:.85em;margin-left:.3rem}
-.uncited{font-size:.85em;margin-left:.3rem;color:#a40;font-weight:600}
-.badge{font-size:.8em;background:#eee;border-radius:3px;padding:0 .3rem}
+.uncited{font-size:.85em;margin-left:.3rem;color:var(--warn);font-weight:600}
+.badge{font-size:.8em;background:var(--badge);border-radius:3px;padding:0 .3rem}
+.sev{font-size:.8em;font-weight:700;letter-spacing:.04em;border:1px solid currentColor;
+border-radius:3px;padding:0 .35rem;margin-right:.4rem}
+.breaking{color:var(--breaking)}.additive{color:var(--additive)}.cosmetic{color:var(--cosmetic)}
+.change{margin:.6rem 0;padding-left:.6rem;border-left:4px solid currentColor}
+.change .loc{font-weight:600}.change small{display:block;color:var(--cosmetic)}
 """
 
 _OPS = {
@@ -71,8 +84,9 @@ def edit_text(edit: Edit, nested: bool = False) -> str:
 
 
 class _Renderer:
-    def __init__(self, spec: AlgoSpec) -> None:
+    def __init__(self, spec: AlgoSpec, report: DiffReport | None = None) -> None:
         self.spec = spec
+        self.report = report
         self.sources = {s.id: s for s in spec.sources}
         self.slugs = strategy_slugs(spec)
 
@@ -100,11 +114,24 @@ class _Renderer:
         return (
             "<!DOCTYPE html>\n"
             '<html lang="en"><head><meta charset="utf-8">'
-            f"<title>{escape(title)}</title><style>{_CSS}</style></head>\n"
+            f"<title>{escape(title)}</title>"
+            f'<link rel="stylesheet" href="{root}style.css"></head>\n'
             f'<body><p><a href="{root}index.html">Index</a></p>\n{body}\n</body></html>\n'
         )
 
     # -- pages
+
+    def changes_page(self, report: DiffReport) -> str:
+        h = ["<h1>Changes</h1>", f"<p>{summary_line(report)}</p>"]
+        for sev in SEVERITIES:
+            group = report.by_severity(sev)
+            if not group:
+                continue
+            h.append(f'<h2 class="{sev}">{sev.capitalize()} ({len(group)})</h2>')
+            h.extend(_change_html(c) for c in group)
+        if not report.changes:
+            h.append("<p>No differences.</p>")
+        return self.page("Changes", "\n".join(h), "")
 
     def index(self) -> str:
         spec = self.spec
@@ -120,6 +147,11 @@ class _Renderer:
                     title = f'<a href="{escape(src.url)}">{title}</a>'
                 h.append(f"<li><code>{escape(src.id)}</code> {title}</li>")
             h.append("</ul>")
+        if self.report is not None:
+            counts = summary_line(self.report)
+            h.append(
+                f'<p><a href="changes.html">Changes from the previous version</a>: {counts}</p>'
+            )
         h.append("<h2>Strategies</h2><table><tr><th>Name</th><th>Label</th>")
         h.append("<th>Wire value</th><th>Parameters</th></tr>")
         for s in spec.strategies:
@@ -204,21 +236,44 @@ class _Renderer:
         return self.page(s.label or s.name, "\n".join(h), "../")
 
 
-def render_site(spec: AlgoSpec) -> dict[str, str]:
-    """Relative path -> HTML, in a stable order."""
-    r = _Renderer(spec)
-    files = {"index.html": r.index()}
+_NAME = re.compile(r"\[@name='([^']*)'\]")
+
+
+def summary_line(report: DiffReport) -> str:
+    return " · ".join(f"{len(report.by_severity(sev))} {sev}" for sev in SEVERITIES)
+
+
+def _change_html(c: Change) -> str:
+    names = _NAME.findall(c.path)
+    where = " \u203a ".join(escape(n) for n in names) if names else escape(c.path)
+    detail = ""
+    if c.old is not None and c.new is not None:
+        detail = f" <code>{escape(c.old)}</code> → <code>{escape(c.new)}</code>"
+    return (
+        f'<div class="change {c.severity}"><span class="sev">{c.severity.upper()}</span>'
+        f'<span class="loc">{where}</span> — {escape(c.message)}{detail}'
+        f"<small>{escape(c.path)}</small></div>"
+    )
+
+
+def render_site(spec: AlgoSpec, old: AlgoSpec | None = None) -> dict[str, str]:
+    """Relative path -> content, in a stable order. Pass ``old`` to add a change report."""
+    report = diff_specs(old, spec) if old is not None else None
+    r = _Renderer(spec, report)
+    files = {"index.html": r.index(), "style.css": STYLE_CSS}
+    if report is not None:
+        files["changes.html"] = r.changes_page(report)
     for s in spec.strategies:
         files[f"strategies/{r.slugs[s.name]}.html"] = r.strategy_page(s)
     return files
 
 
-def write_site(spec: AlgoSpec, out_dir: str | Path) -> list[Path]:
+def write_site(spec: AlgoSpec, out_dir: str | Path, old: AlgoSpec | None = None) -> list[Path]:
     out = Path(out_dir)
     written = []
-    for rel, html in render_site(spec).items():
+    for rel, text in render_site(spec, old).items():
         path = out / rel
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(html.encode("utf-8"))
+        path.write_bytes(text.encode("utf-8"))
         written.append(path)
     return written

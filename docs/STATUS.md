@@ -6,12 +6,11 @@
 
 ## Last run
 
-**2026-11-08 (daily firing) — split-glyph repair.** Worker added `repair_split_glyphs` so table
-cells such as `TrdRegPublicationTy pe` are repaired against the page's plain text (bounded: join
-up to 3 tokens, only when the whole word is in the plain text and the split form is not). The
-extraction prompt now tells the model to quote from the page-text section. D10 untouched; no new
-dependency. Yesterday: PDF field tables (item 21), FIXatdl public samples (item 2), corpus terms
-review (item 13).
+**2026-11-09 (daily firing) — change report page.** Worker made `concord site NEW OUT --diff OLD`
+render a native `changes.html`: summary counts, then breaking / additive / cosmetic sections with
+`Strategy › Parameter`, message and old → new, colour plus text labels, linked from the index.
+CSS is now one shared `style.css` with light and dark themes. No new dependency. Before that:
+split-glyph repair (item 22), PDF field tables (item 21), samples (item 2), terms review (item 13).
 
 ## Needs owner
 

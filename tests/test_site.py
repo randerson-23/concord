@@ -90,7 +90,7 @@ def test_edit_text_nesting() -> None:
 def test_slug_collisions() -> None:
     slugs = strategy_slugs(_spec())
     assert list(slugs.values()) == ["vwap", "v-w-a-p", "v-w-a-p-2"]
-    assert len(render_site(_spec())) == 4
+    assert len(render_site(_spec())) == 5  # index, style.css, three strategies
 
 
 def test_deterministic(tmp_path: Path) -> None:
@@ -112,3 +112,68 @@ def test_cli_writes_expected_files(tmp_path: Path, capsys) -> None:
     for slug in strategy_slugs(spec).values():
         assert (out / "strategies" / f"{slug}.html").exists()
     assert spec.provider is None or "<h1>" in (out / "index.html").read_text()
+
+
+# --------------------------------------------------------------------------- change report
+
+
+def _versions() -> tuple[AlgoSpec, AlgoSpec]:
+    def build(*, new: bool) -> AlgoSpec:
+        style_values = [EnumValue(wire_value="P", label="Passive")]
+        if new:
+            style_values.append(EnumValue(wire_value="A", label="Aggressive"))
+        params = [
+            Parameter(name="Style", type=ParamType.CHAR, fix_tag=7001, enum_values=style_values)
+        ]
+        if not new:
+            params.append(Parameter(name="Cap<b>", type=ParamType.INT, fix_tag=7002))
+        return AlgoSpec(
+            provider="Acme",
+            strategies=[
+                Strategy(name="VWAP", wire_value="1", parameters=params),
+                Strategy(name="Legacy" if not new else "Classic", wire_value="2"),
+            ],
+        )
+
+    return build(new=False), build(new=True)
+
+
+def test_change_report_page_groups_changes_by_severity() -> None:
+    old, new = _versions()
+    files = render_site(new, old)
+    page = files["changes.html"]
+    assert "1 breaking · 1 additive · 1 cosmetic" in page
+    order = [page.index(f">{h}") for h in ("Breaking (1)", "Additive (1)", "Cosmetic (1)")]
+    assert order == sorted(order)
+    breaking, rest = page.split(">Additive (1)")
+    assert "Cap&lt;b&gt;" in breaking and "<b>" not in page
+    assert "VWAP \u203a Cap&lt;b&gt;" in breaking
+    assert "enum value" in rest and "Legacy" in rest.split(">Cosmetic (1)")[1]
+    assert page.count('class="sev"') == 3 and "BREAKING" in page and "COSMETIC" in page
+    index = files["index.html"]
+    assert 'href="changes.html"' in index and "1 breaking · 1 additive · 1 cosmetic" in index
+    assert 'href="style.css"' in page and "<style>" not in page
+
+
+def test_no_diff_means_no_change_report() -> None:
+    _, new = _versions()
+    assert "changes.html" not in render_site(new)
+    assert "changes.html" not in render_site(new)["index.html"]
+    assert "No differences." in render_site(new, new)["changes.html"]
+
+
+def test_change_report_is_deterministic_and_cli_writes_it(tmp_path: Path) -> None:
+    old, new = _versions()
+    assert render_site(new, old) == render_site(new, old)
+    (tmp_path / "old.json").write_text(old.model_dump_json(exclude_none=True))
+    (tmp_path / "new.json").write_text(new.model_dump_json(exclude_none=True))
+    outs = []
+    for name in ("a", "b"):
+        out = tmp_path / name
+        args = ["site", str(tmp_path / "new.json"), str(out), "--diff", str(tmp_path / "old.json")]
+        assert main(args) == 0
+        outs.append(out)
+    for rel in ("changes.html", "index.html", "style.css"):
+        assert (outs[0] / rel).read_bytes() == (outs[1] / rel).read_bytes()
+    css = (outs[0] / "style.css").read_text()
+    assert "prefers-color-scheme:dark" in css

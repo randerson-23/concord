@@ -93,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
     st = sub.add_parser("site", help="render a spec as a static HTML site")
     st.add_argument("spec")
     st.add_argument("out_dir")
+    st.add_argument("--diff", metavar="OLD", help="previous version; adds a changes.html report")
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
 
@@ -130,7 +131,8 @@ def main(argv: list[str] | None = None) -> int:
             if res.review:
                 return 2
         elif args.cmd == "site":
-            files = write_site(_load(args.spec), args.out_dir)
+            old = _load(args.diff) if args.diff else None
+            files = write_site(_load(args.spec), args.out_dir, old)
             print(f"wrote {len(files)} files to {args.out_dir}")
         elif args.cmd == "convert":
             spec = _load(args.file)
