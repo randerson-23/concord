@@ -75,3 +75,13 @@ press on multi-month algo onboarding turned up (search on 2026-11-05).
   <https://library.tradingtechnologies.com/tt-fix/tt-fix-general/fix-message-structure/component-targetstrategy-tt-premium-order-types/>
   *Product:* this is the kind of cross-broker mapping an OMS team does by hand. A
   later "same concept, different tag" view in the library would sell it.
+
+## 2026-11-10
+
+- **No real version pairs exist yet for testing the diff engine.** The public FIXatdl
+  sample repos (atdl4j, FixPortal) have one commit per sample file, so their history
+  holds no earlier versions. The Nasdaq Nordic v2.02.2/v2.02.3 PDF pair is still
+  unreachable from here. The first real diff will come from either (a) the owner
+  downloading that pair by hand, or (b) extracting two editions of a public spec once
+  the API key is in.
+  *Product:* the diff engine is tested only on synthetic edits. Say so when demoing it.
