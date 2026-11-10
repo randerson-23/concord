@@ -6,11 +6,10 @@
 
 ## Last run
 
-**2026-11-09 (daily firing) — change report page.** Worker made `concord site NEW OUT --diff OLD`
-render a native `changes.html`: summary counts, then breaking / additive / cosmetic sections with
-`Strategy › Parameter`, message and old → new, colour plus text labels, linked from the index.
-CSS is now one shared `style.css` with light and dark themes. No new dependency. Before that:
-split-glyph repair (item 22), PDF field tables (item 21), samples (item 2), terms review (item 13).
+**2026-11-10 (daily firing) — amendability on the site.** Worker added a "cannot amend" badge on
+parameters with `mutableOnCxlRpl=false`, a summary line above each strategy's parameter table, and
+previous/next links between strategy pages (backlog item 8). No new dependency. Before that:
+change report page (23), split-glyph repair (22), PDF field tables (21), samples (2), terms (13).
 
 ## Needs owner
 

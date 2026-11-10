@@ -33,6 +33,9 @@ code{background:var(--code);padding:0 .2rem}
 .sev{font-size:.8em;font-weight:700;letter-spacing:.04em;border:1px solid currentColor;
 border-radius:3px;padding:0 .35rem;margin-right:.4rem}
 .breaking{color:var(--breaking)}.additive{color:var(--additive)}.cosmetic{color:var(--cosmetic)}
+.badge.cannot{color:var(--breaking);font-weight:700;margin-left:.3rem}
+.cannot-amend{border-left:4px solid var(--breaking);padding-left:.6rem}
+.nav{display:flex;justify-content:space-between}
 .change{margin:.6rem 0;padding-left:.6rem;border-left:4px solid currentColor}
 .change .loc{font-weight:600}.change small{display:block;color:var(--cosmetic)}
 """
@@ -178,8 +181,13 @@ class _Renderer:
         if p.mutable_on_cxl_rpl is not None:
             mutable = "yes" if p.mutable_on_cxl_rpl else "no"
         desc = f"<br>{escape(p.description)}" if p.description else ""
+        flag = (
+            ' <span class="badge cannot">cannot amend</span>'
+            if p.mutable_on_cxl_rpl is False
+            else ""
+        )
         cells = [
-            f"{escape(p.name)}{desc}{self.cites(p.citations)}",
+            f"{escape(p.name)}{flag}{desc}{self.cites(p.citations)}",
             str(p.fix_tag) if p.fix_tag else "",
             escape(p.type.value),
             "yes" if p.required else "no",
@@ -199,6 +207,13 @@ class _Renderer:
         )
         if s.description:
             h.append(f"<p>{escape(s.description)}</p>")
+        fixed = [p.name for p in s.parameters if p.mutable_on_cxl_rpl is False]
+        if fixed:
+            names = ", ".join(f"<code>{escape(n)}</code>" for n in fixed)
+            label = "<strong>Cannot amend on cancel/replace:</strong>"
+            h.append(f'<p class="cannot-amend">{label} {names}</p>')
+        else:
+            h.append("<p><strong>Cannot amend on cancel/replace:</strong> none stated.</p>")
         h.append("<h2>Parameters</h2>")
         if s.parameters:
             h.append(
@@ -233,7 +248,24 @@ class _Renderer:
                 rows.append(f"<li>{label}: {escape(text)}</li>")
         h.append("<h2>Applicability</h2>")
         h.append(f"<ul>{''.join(rows)}</ul>" if rows else "<p>Unrestricted.</p>")
+        h.append(self.neighbours(s))
         return self.page(s.label or s.name, "\n".join(h), "../")
+
+    def neighbours(self, s: Strategy) -> str:
+        names = [x.name for x in self.spec.strategies]
+        i = names.index(s.name)
+        label = {x.name: x.label or x.name for x in self.spec.strategies}
+
+        def link(j: int, before: str, after: str) -> str:
+            if not 0 <= j < len(names):
+                return "<span></span>"
+            text = escape(label[names[j]])
+            href = f"{self.slugs[names[j]]}.html"
+            return f'<a href="{escape(href)}">{before}{text}{after}</a>'
+
+        prev_link = link(i - 1, "\u2190 ", "")
+        next_link = link(i + 1, "", " \u2192")
+        return f'<nav class="nav">{prev_link}{next_link}</nav>'
 
 
 _NAME = re.compile(r"\[@name='([^']*)'\]")

@@ -177,3 +177,54 @@ def test_change_report_is_deterministic_and_cli_writes_it(tmp_path: Path) -> Non
         assert (outs[0] / rel).read_bytes() == (outs[1] / rel).read_bytes()
     css = (outs[0] / "style.css").read_text()
     assert "prefers-color-scheme:dark" in css
+
+
+# ------------------------------------------------------------------ amendability, navigation
+
+
+def _amend_spec() -> AlgoSpec:
+    return AlgoSpec(
+        strategies=[
+            Strategy(
+                name="First",
+                wire_value="1",
+                parameters=[
+                    Parameter(
+                        name="Locked<i>", type=ParamType.INT, fix_tag=7001, mutable_on_cxl_rpl=False
+                    ),
+                    Parameter(
+                        name="Free", type=ParamType.INT, fix_tag=7002, mutable_on_cxl_rpl=True
+                    ),
+                ],
+            ),
+            Strategy(name="Second", wire_value="2", label="Second Label"),
+            Strategy(name="Third", wire_value="3"),
+        ]
+    )
+
+
+def test_immutable_parameter_gets_badge_and_summary_above_the_table() -> None:
+    page = render_site(_amend_spec())["strategies/first.html"]
+    assert page.count("cannot amend</span>") == 1  # badge on Locked only
+    summary = "<strong>Cannot amend on cancel/replace:</strong> <code>Locked&lt;i&gt;</code>"
+    assert summary in page
+    assert page.index(summary) < page.index("<table>")
+    assert "<i>" not in page
+
+
+def test_summary_says_none_stated_when_nothing_is_immutable() -> None:
+    page = render_site(_amend_spec())["strategies/second.html"]
+    assert "Cannot amend on cancel/replace:</strong> none stated." in page
+    assert "badge cannot" not in page
+
+
+def test_every_strategy_page_links_to_index_and_neighbours() -> None:
+    files = render_site(_amend_spec())
+    for slug in ("first", "second", "third"):
+        assert 'href="../index.html"' in files[f"strategies/{slug}.html"]
+    assert 'href="second.html">Second Label \u2192</a>' in files["strategies/first.html"]
+    assert "\u2190" not in files["strategies/first.html"]
+    second = files["strategies/second.html"]
+    assert 'href="first.html">\u2190 First</a>' in second
+    assert 'href="third.html">Third \u2192</a>' in second
+    assert "\u2192" not in files["strategies/third.html"]

@@ -52,17 +52,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     section, not the layout text. D10 untouched. Tests: split, three-way split, genuine two-word
     cell kept, unrelated cell untouched, and the opt-in real-page check. Limit: a cell broken
     by a page boundary (`ansactionId`) is a fragment, not a repairable split.
-8. `todo` **Site: mark parameters that are not mutable on cancel/replace.** Show a
-   badge wherever `mutable_on_cxl_rpl is False`, and add a "cannot amend" summary
-   on each strategy page. Customer signal says custom tags breaking cxl/rpl is a
-   recurring OMS failure (`docs/research/customer-signal.md`). Also add prev/next
-   and index navigation links between strategy pages (item 6 follow-up).
-   Still top on 2026-11-10: it is small, it finishes the site's per-strategy view, and
-   item 23's `style.css` now gives the badge a place in both themes. Put the
-   "cannot amend" summary near the top of the strategy page, above the parameter table.
-   Acceptance: a site test with one immutable parameter checks the badge and the
-   summary line; a test checks each strategy page links back to `index.html`;
-   determinism test still passes.
+8. `done 2026-11-10` **Site: mark parameters that are not mutable on cancel/replace.**
+   Done: parameters with `mutable_on_cxl_rpl is False` get a red "cannot amend" badge (colour
+   plus text) in the name cell. Each strategy page has a "Cannot amend on cancel/replace:" line
+   above the parameter table, listing those parameters or saying "none stated". Strategy pages
+   also link to the previous and next strategy and, as before, back to the index. Tests: badge
+   and summary with escaping and ordering, the none-stated case, index and neighbour links.
+   Follow-up: item 12 (library index). Note: the repo targets Python 3.11, so f-string
+   expressions must not contain backslashes (ruff catches it; local Python is 3.13).
 23. `done 2026-11-09` **Site: rendered change report (`concord site NEW OUT_DIR --diff OLD`).**
     Done: `render_site(spec, old=None)` / `write_site(..., old)` and `--diff OLD` write
     `changes.html` (summary line, then Breaking, Additive, Cosmetic sections; each change shows
