@@ -57,6 +57,9 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
    on each strategy page. Customer signal says custom tags breaking cxl/rpl is a
    recurring OMS failure (`docs/research/customer-signal.md`). Also add prev/next
    and index navigation links between strategy pages (item 6 follow-up).
+   Still top on 2026-11-10: it is small, it finishes the site's per-strategy view, and
+   item 23's `style.css` now gives the badge a place in both themes. Put the
+   "cannot amend" summary near the top of the strategy page, above the parameter table.
    Acceptance: a site test with one immutable parameter checks the badge and the
    summary line; a test checks each strategy page links back to `index.html`;
    determinism test still passes.

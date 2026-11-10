@@ -149,6 +149,8 @@ sources:
     found: 2026-11-05
     terms: >-
       Not reviewed. Fetch failed with a server/transport error (empty reply) on 2026-11-07, also over HTTP/1.1.
+      PM retry 2026-11-10: both versions still fail (HTTP/2 stream reset by the server; proxy logged no fault).
+      Likely bot protection, so do not work around it. Fetching by hand is the only route.
     license: null
     use: unreachable
     notes: >-
@@ -200,6 +202,8 @@ sources:
     found: 2026-11-05
     terms: >-
       Not reviewed. Fetch failed with a server/transport error (empty reply) on 2026-11-07, also over HTTP/1.1.
+      PM retry 2026-11-10: both versions still fail (HTTP/2 stream reset by the server; proxy logged no fault).
+      Likely bot protection, so do not work around it. Fetching by hand is the only route.
     license: null
     use: unreachable
     notes: >-
