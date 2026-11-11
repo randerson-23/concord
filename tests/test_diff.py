@@ -323,3 +323,33 @@ def test_cli_fail_on_breaking_for_strategy_rename(tmp_path):
     )
     assert main(["diff", str(a), str(b), "--fail-on-breaking"]) == 0
     assert main(["diff", str(a), str(c), "--fail-on-breaking"]) == 2
+
+
+# --------------------------------------------------------------------------- wire contract (D16)
+
+
+@pytest.mark.parametrize(
+    ("attr", "old", "new", "severity"),
+    [
+        ("tag957_support", True, False, "breaking"),
+        ("tag957_support", None, True, "additive"),
+        ("change_strategy_on_cxl_rpl", True, False, "breaking"),
+        ("change_strategy_on_cxl_rpl", False, True, "additive"),
+        ("draft_flag_identifier_tag", 7699, 7700, "breaking"),
+        ("draft_flag_identifier_tag", 7699, None, "breaking"),
+        ("draft_flag_identifier_tag", None, 7699, "additive"),
+    ],
+)
+def test_wire_contract_changes_are_classified(attr, old, new, severity):
+    a, b = base(), base()
+    setattr(a, attr, old)
+    setattr(b, attr, new)
+    (change,) = [c for c in diff_specs(a, b).changes if c.kind == f"{attr}_changed"]
+    assert change.severity == severity and change.path == "spec"
+
+
+def test_unset_and_false_wire_contract_do_not_differ():
+    a, b = base(), base()
+    b.tag957_support = False
+    b.change_strategy_on_cxl_rpl = False
+    assert diff_specs(a, b).changes == []

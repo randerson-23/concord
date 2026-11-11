@@ -6,10 +6,12 @@
 
 ## Last run
 
-**2026-11-10 (daily firing) — amendability on the site.** Worker added a "cannot amend" badge on
-parameters with `mutableOnCxlRpl=false`, a summary line above each strategy's parameter table, and
-previous/next links between strategy pages (backlog item 8). No new dependency. Before that:
-change report page (23), split-glyph repair (22), PDF field tables (21), samples (2), terms (13).
+**2026-11-11 (daily firing) — wire-contract attributes.** Worker made the IR and FIXatdl round trip
+keep `tag957Support`, `changeStrategyOnCxlRpl` and `draftFlagIdentifierTag` (D16), which were
+silently dropped before. Diff classifies them, the site index shows them, and the reader rejects a
+tagless parameter unless `tag957Support="true"`. Public samples (29): 0 set `tag957Support`, 2 set
+`changeStrategyOnCxlRpl`, 0 set `draftFlagIdentifierTag`. No new dependency. Before that:
+amendability on the site (8), change report (23), split glyphs (22), PDF tables (21).
 
 ## Needs owner
 

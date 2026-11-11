@@ -86,6 +86,7 @@ def diff_specs(old: AlgoSpec, new: AlgoSpec) -> DiffReport:
     scalar("breaking", "spec", "strategy_identifier_tag", *_t(old, new, "strategy_identifier_tag"))
     scalar("breaking", "spec", "version_identifier_tag", *_t(old, new, "version_identifier_tag"))
     scalar("cosmetic", "spec", "description", old.description, new.description)
+    _diff_wire_contract(old, new, add)
 
     old_s = {s.name: s for s in old.strategies}
     new_s = {s.name: s for s in new.strategies}
@@ -131,6 +132,30 @@ def diff_specs(old: AlgoSpec, new: AlgoSpec) -> DiffReport:
         _diff_strategy(old_s[name], new_s[name], add, scalar)
 
     return DiffReport(changes)
+
+
+def _diff_wire_contract(old: AlgoSpec, new: AlgoSpec, add) -> None:
+    """D9 rules for the document-level wire-contract attributes (D16)."""
+    for attr, what in (
+        ("tag957_support", "StrategyParameters group (957) support"),
+        ("change_strategy_on_cxl_rpl", "changing the strategy on cancel/replace"),
+    ):
+        was, now = getattr(old, attr) is True, getattr(new, attr) is True
+        if was and not now:
+            add("breaking", "spec", f"{attr}_changed", f"{what} withdrawn", was, now)
+        elif now and not was:
+            add("additive", "spec", f"{attr}_changed", f"{what} now supported", was, now)
+    o, n = old.draft_flag_identifier_tag, new.draft_flag_identifier_tag
+    if o != n:
+        sev = "additive" if o is None else "breaking"
+        add(
+            sev,
+            "spec",
+            "draft_flag_identifier_tag_changed",
+            f"draft flag tag {_show(o)} -> {_show(n)}",
+            o,
+            n,
+        )
 
 
 def _t(old: AlgoSpec, new: AlgoSpec, attr: str) -> tuple[Any, Any]:

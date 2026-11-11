@@ -69,17 +69,15 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `--diff` no `changes.html` is written. Tests: one change per severity under the right
     heading, escaping, index link and counts, byte-identical output, CLI. Follow-ups: item 12
     (multi-spec library index); a strategy-level view of the report; item 8 still todo.
-10. `todo` **IR: parameter encoding.** Add a `wire_encoding` field to the strategy
-    or spec, with values `tag` / `848-pairs` / `957-group`. Public specs use all
-    three (TT uses 957–960, the FIX 4.4 extension uses 848, most use flat custom
-    tags; see `docs/research/customer-signal.md`). This adds a field without
-    changing any meaning, so no IR_VERSION bump. The FIXatdl reader sets `tag`.
-    Moved ahead of item 9 because the Orchestra writer must know the encoding.
-    Acceptance: round-trip test, diff classifies an encoding change as breaking,
-    site shows the encoding, and `concord schema` shows the field.
-    Note (research 2026-11-06): strategy identifiers also arrive as ExDestination(100)
-    or BrokerID(76). `strategy_identifier_tag` already covers these, so this item adds
-    nothing for them. Keep the fixture's identifier on 847.
+10. `done 2026-11-11` **IR + FIXatdl: keep the wire-contract attributes on `<Strategies>`.**
+    Done (decision D16): `tag957_support`, `change_strategy_on_cxl_rpl`,
+    `draft_flag_identifier_tag` read, written only when set, diffed (breaking / additive per
+    D16), shown on the site index, listed by `concord schema`. `parameter_transport(param)` gives
+    `tag` or `957-group`; the reader rejects a tagless parameter without `tag957Support="true"`.
+    `example_broker.xml` now declares all three. Public samples (29 files): 0 set
+    `tag957Support`, 2 set `changeStrategyOnCxlRpl` (`regions-enums.xml`, `tz-clock.xml`),
+    0 set `draftFlagIdentifierTag`; the strictness breaks none. Follow-up: the Orchestra writer
+    (9a) should use `parameter_transport`; `848-pairs` waits for PDF extraction.
 9a. `todo` **FIX Orchestra writer, fields and codeSets.** `concord.orchestra`
     writes an Orchestra repository with one field per algo parameter (custom
     tags as user-defined fields) and one codeSet per enum, plus the strategy

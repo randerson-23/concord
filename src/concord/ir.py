@@ -343,6 +343,16 @@ class AlgoSpec(_Model):
     provider: str | None = None
     strategy_identifier_tag: int = Field(default=847, gt=0)
     version_identifier_tag: int | None = Field(default=None, gt=0)
+    tag957_support: bool | None = Field(
+        default=None,
+        description="The provider accepts parameters in the StrategyParameters group (957-960).",
+    )
+    change_strategy_on_cxl_rpl: bool | None = Field(
+        default=None, description="A cancel/replace may change the strategy itself."
+    )
+    draft_flag_identifier_tag: int | None = Field(
+        default=None, gt=0, description="Tag that marks a draft order."
+    )
     description: str | None = None
     strategies: list[Strategy] = Field(default_factory=list)
     sources: list[SourceDocument] = Field(default_factory=list)
@@ -376,3 +386,12 @@ class AlgoSpec(_Model):
                     yield from e.citations
             for se in s.edits:
                 yield from se.citations
+
+
+def parameter_transport(param: Parameter) -> Literal["tag", "957-group"]:
+    """How a parameter travels on the wire: its own tag, or the 957 StrategyParameters group.
+
+    A parameter with no ``fix_tag`` can only travel in the group, which the provider must
+    have declared with ``AlgoSpec.tag957_support`` (the FIXatdl reader enforces that).
+    """
+    return "tag" if param.fix_tag is not None else "957-group"

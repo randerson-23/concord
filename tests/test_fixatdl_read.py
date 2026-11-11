@@ -188,3 +188,52 @@ def test_external_entities_are_not_resolved(tmp_path):
     ).encode()
     spec = read_fixatdl(data).spec
     assert "TOP-SECRET" not in (spec.description or "")
+
+
+# --------------------------------------------------------------------------- wire contract (D16)
+
+_NOTAG = b"""<Strategies strategyIdentifierTag="847" %s
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Strategy name="S" wireValue="1" version="1">
+    <Parameter xsi:type="Int_t" name="Untagged"/>
+  </Strategy>
+</Strategies>"""
+
+
+def test_wire_contract_attributes_are_read_and_written():
+    from concord.fixatdl import write_fixatdl
+    from concord.ir import parameter_transport
+
+    data = (
+        _NOTAG
+        % b'tag957Support="true" changeStrategyOnCxlRpl="false" draftFlagIdentifierTag="7699"'
+    )
+    spec = read_fixatdl(data).spec
+    assert (spec.tag957_support, spec.change_strategy_on_cxl_rpl) == (True, False)
+    assert spec.draft_flag_identifier_tag == 7699
+    assert parameter_transport(spec.strategies[0].parameters[0]) == "957-group"
+    again = read_fixatdl(write_fixatdl(spec)).spec
+    assert again.model_dump() == spec.model_dump()
+
+
+def test_absent_wire_contract_attributes_stay_absent():
+    from concord.fixatdl import write_fixatdl
+
+    spec = read_fixatdl(_MINIMAL % b"").spec
+    out = write_fixatdl(spec)
+    assert b"tag957Support" not in out and b"changeStrategyOnCxlRpl" not in out
+    assert b"draftFlagIdentifierTag" not in out
+
+
+@pytest.mark.parametrize("attrs", [b"", b'tag957Support="false"'])
+def test_parameter_without_tag_needs_tag957_support(attrs):
+    with pytest.raises(
+        FixatdlError, match=r"Strategy\[@name='S'\]/Parameter\[@name='Untagged'\].*tag957Support"
+    ):
+        read_fixatdl(_NOTAG % attrs)
+
+
+def test_example_broker_declares_the_wire_contract(example_broker_bytes):
+    spec = read_fixatdl(example_broker_bytes).spec
+    assert (spec.tag957_support, spec.change_strategy_on_cxl_rpl) == (True, False)
+    assert spec.draft_flag_identifier_tag == 7699

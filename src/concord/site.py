@@ -142,6 +142,10 @@ class _Renderer:
         if spec.description:
             h.append(f"<p>{escape(spec.description)}</p>")
         h.append(f"<p>Strategy identifier tag: <code>{spec.strategy_identifier_tag}</code></p>")
+        sent = "StrategyParameters group (957)" if spec.tag957_support else "custom tags"
+        h.append(f"<p>Parameters sent as: {sent}</p>")
+        change = {True: "yes", False: "no", None: "not stated"}[spec.change_strategy_on_cxl_rpl]
+        h.append(f"<p>Strategy can change on cancel/replace: {change}</p>")
         if spec.sources:
             h.append("<h2>Sources</h2><ul>")
             for src in spec.sources:

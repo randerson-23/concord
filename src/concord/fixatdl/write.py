@@ -52,6 +52,12 @@ def write_fixatdl(spec: AlgoSpec) -> bytes:
     root.set("strategyIdentifierTag", str(spec.strategy_identifier_tag))
     if spec.version_identifier_tag is not None:
         root.set("versionIdentifierTag", str(spec.version_identifier_tag))
+    if spec.tag957_support is not None:
+        root.set("tag957Support", _xbool(spec.tag957_support))
+    if spec.change_strategy_on_cxl_rpl is not None:
+        root.set("changeStrategyOnCxlRpl", _xbool(spec.change_strategy_on_cxl_rpl))
+    if spec.draft_flag_identifier_tag is not None:
+        root.set("draftFlagIdentifierTag", str(spec.draft_flag_identifier_tag))
     if spec.description:
         etree.SubElement(root, _c("Description")).text = spec.description
     for strategy in spec.strategies:
