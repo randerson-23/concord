@@ -70,7 +70,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     heading, escaping, index link and counts, byte-identical output, CLI. Follow-ups: item 12
     (multi-spec library index); a strategy-level view of the report; item 8 still todo.
 10. `todo` **IR + FIXatdl: keep the wire-contract attributes on `<Strategies>`.**
-    Rewritten 2026-11-10 after a PM check against atdl4j's FIXatdl 1.1 schema
+    Rewritten 2026-11-11 after a PM check against atdl4j's FIXatdl 1.1 schema
     bindings (`src/main/java/org/atdl4j/fixatdl/core/StrategiesT.java`, MIT). The
     reader drops three wire-level attributes on `<Strategies>`, and the writer never
     emits them. So `read → write` silently loses them today:
