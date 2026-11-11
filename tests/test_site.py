@@ -228,3 +228,22 @@ def test_every_strategy_page_links_to_index_and_neighbours() -> None:
     assert 'href="first.html">\u2190 First</a>' in second
     assert 'href="third.html">Third \u2192</a>' in second
     assert "\u2192" not in files["strategies/third.html"]
+
+
+def test_index_shows_the_wire_contract() -> None:
+    assert "Parameters sent as: custom tags" in render_site(_amend_spec())["index.html"]
+    assert (
+        "Strategy can change on cancel/replace: not stated"
+        in render_site(_amend_spec())["index.html"]
+    )
+    spec = _load(str(FIXTURE))
+    index = render_site(spec)["index.html"]
+    assert "Parameters sent as: StrategyParameters group (957)" in index
+    assert "Strategy can change on cancel/replace: no" in index
+
+
+def test_schema_lists_the_wire_contract_fields(capsys) -> None:
+    assert main(["schema"]) == 0
+    out = capsys.readouterr().out
+    for field in ("tag957_support", "change_strategy_on_cxl_rpl", "draft_flag_identifier_tag"):
+        assert field in out

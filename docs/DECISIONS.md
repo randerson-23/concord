@@ -127,3 +127,17 @@ git-ignored `corpus/cache/<id>/`, reused when HEAD already equals the pinned sha
 nothing committed). Item 9b (Orchestra XSD) should use the same approach. Round-trip equality
 allows two documented writer normalisations: an `enumID` that is not a legal XML identifier
 is regenerated, and an unlabeled enum value is written with its wire value as `uiRep`.
+
+## D16 · 2026-11-11 · Wire-contract attributes on `<Strategies>` are in the IR
+
+`tag957Support`, `changeStrategyOnCxlRpl` and `draftFlagIdentifierTag` are `AlgoSpec` fields
+(`tag957_support`, `change_strategy_on_cxl_rpl`, `draft_flag_identifier_tag`, all optional,
+no IR_VERSION bump). They are written only when set, so output stays byte-stable.
+`imageLocation` is UI-only and is dropped on purpose. A parameter with no `fixTag` can only
+travel in the 957 group, so the FIXatdl reader raises `FixatdlError` naming
+`Strategy/Parameter` unless `tag957Support="true"`; none of the 29 public samples breaks this.
+Diff (D9 style): losing `tag957_support` or `change_strategy_on_cxl_rpl` (true to not-true) is
+breaking and gaining it is additive; unset and false are the same; a changed or removed
+`draft_flag_identifier_tag` is breaking and a new one is additive. `parameter_transport(param)`
+returns `tag` or `957-group` for the Orchestra writer. `848-pairs` has no FIXatdl form and
+waits for PDF extraction.

@@ -69,48 +69,15 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `--diff` no `changes.html` is written. Tests: one change per severity under the right
     heading, escaping, index link and counts, byte-identical output, CLI. Follow-ups: item 12
     (multi-spec library index); a strategy-level view of the report; item 8 still todo.
-10. `todo` **IR + FIXatdl: keep the wire-contract attributes on `<Strategies>`.**
-    Rewritten 2026-11-11 after a PM check against atdl4j's FIXatdl 1.1 schema
-    bindings (`src/main/java/org/atdl4j/fixatdl/core/StrategiesT.java`, MIT). The
-    reader drops three wire-level attributes on `<Strategies>`, and the writer never
-    emits them. So `read → write` silently loses them today:
-    - `tag957Support` (boolean, default false): the provider accepts parameters in
-      the StrategyParameters group (957–960). A parameter with no `fixTag` can
-      only travel that way.
-    - `changeStrategyOnCxlRpl` (boolean): whether a cancel/replace may change the
-      strategy itself. This is the cancel/replace fact customers complain about
-      (`docs/research/customer-signal.md`), one level up from item 8.
-    - `draftFlagIdentifierTag` (positive integer): the tag that marks a draft order.
-    - `imageLocation` is UI-only. Ignore it on purpose and say so in a code comment.
-    Do this:
-    - Add `tag957_support: bool | None`, `change_strategy_on_cxl_rpl: bool | None`
-      and `draft_flag_identifier_tag: int | None` to `AlgoSpec`. These are new
-      fields, so no IR_VERSION bump. Read them, write them only when not None, and
-      keep `tag957Support` absent unless it is set, for byte-stable output.
-    - Add a helper `parameter_transport(spec, param) -> "tag" | "957-group"`:
-      `tag` when `fix_tag` is set, otherwise `957-group`. A parameter with no tag
-      under `tag957_support` False or None is a spec error. The reader raises
-      `FixatdlError` naming `Strategy[@name]/Parameter[@name]` and saying that
-      `fixTag` or `tag957Support="true"` was expected. Check the public samples
-      before making this strict. If any public file breaks, make it a warning on
-      the review list instead and record the choice.
-    - Diff (D9 style): `tag957_support` going true → false is breaking and
-      false → true is additive. `change_strategy_on_cxl_rpl` going true → false is
-      breaking and false → true is additive. A changed or removed
-      `draft_flag_identifier_tag` is breaking.
-    - Site index: show "Parameters sent as: custom tags / StrategyParameters
-      group (957)" and "Strategy can change on cancel/replace: yes / no / not
-      stated".
-    - `848-pairs` (TargetStrategyParameters as `tag:value;` pairs) has no FIXatdl
-      form. Leave it out of this item. It arrives with PDF extraction, and 9a/9b
-      can add it then.
-    Acceptance: add all three attributes to `example_broker.xml`, with the
-    synthetic header kept, and round-trip it. Add one param-without-tag case each
-    way, a diff test per rule above, a site assertion, and `concord schema` listing
-    the fields. `CONCORD_PUBLIC_SAMPLES=1` still passes. Report in STATUS how many
-    public samples set each attribute. Why first: it is silent data loss in the
-    one format we already ship, and the Orchestra writer (9a) needs the transport
-    to choose between user-defined fields and the 957 group.
+10. `done 2026-11-11` **IR + FIXatdl: keep the wire-contract attributes on `<Strategies>`.**
+    Done (decision D16): `tag957_support`, `change_strategy_on_cxl_rpl`,
+    `draft_flag_identifier_tag` read, written only when set, diffed (breaking / additive per
+    D16), shown on the site index, listed by `concord schema`. `parameter_transport(param)` gives
+    `tag` or `957-group`; the reader rejects a tagless parameter without `tag957Support="true"`.
+    `example_broker.xml` now declares all three. Public samples (29 files): 0 set
+    `tag957Support`, 2 set `changeStrategyOnCxlRpl` (`regions-enums.xml`, `tz-clock.xml`),
+    0 set `draftFlagIdentifierTag`; the strictness breaks none. Follow-up: the Orchestra writer
+    (9a) should use `parameter_transport`; `848-pairs` waits for PDF extraction.
 9a. `todo` **FIX Orchestra writer, fields and codeSets.** `concord.orchestra`
     writes an Orchestra repository with one field per algo parameter (custom
     tags as user-defined fields) and one codeSet per enum, plus the strategy

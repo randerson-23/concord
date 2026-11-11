@@ -8,7 +8,8 @@
             xmlns:val="http://www.fixprotocol.org/FIXatdl-1-1/Validation"
             xmlns:lay="http://www.fixprotocol.org/FIXatdl-1-1/Layout"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            strategyIdentifierTag="7620" versionIdentifierTag="7621">
+            strategyIdentifierTag="7620" versionIdentifierTag="7621"
+            tag957Support="true" changeStrategyOnCxlRpl="false" draftFlagIdentifierTag="7699">
   <Description>Example Broker algorithmic suite for cash equities.</Description>
 
   <!-- A named edit reused by more than one strategy via EditRef. -->

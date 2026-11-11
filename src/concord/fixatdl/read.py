@@ -31,6 +31,7 @@ from concord.ir import (
     SourceDocument,
     Strategy,
     StrategyEdit,
+    parameter_transport,
 )
 
 _XSI_TYPE = f"{{{NS_XSI}}}type"
@@ -147,6 +148,16 @@ class _Reader:
         if not strategies:
             raise FixatdlError("document defines no <Strategy>")
 
+        if _bool(root.get("tag957Support")) is not True:
+            for st in strategies:
+                for param in st.parameters:
+                    if parameter_transport(param) == "957-group":
+                        raise FixatdlError(
+                            f"Strategy[@name='{st.name}']/Parameter[@name='{param.name}']: "
+                            'expected @fixTag, or tag957Support="true" on <Strategies> '
+                            "so the parameter can travel in the StrategyParameters group"
+                        )
+        # Strategies/@imageLocation is UI-only (a logo path), so it is dropped on purpose.
         providers = {s.provider_id for s in strategies if s.provider_id}
         try:
             spec = AlgoSpec(
@@ -154,6 +165,11 @@ class _Reader:
                 strategy_identifier_tag=tag,
                 version_identifier_tag=_int(
                     root.get("versionIdentifierTag"), "Strategies/@versionIdentifierTag"
+                ),
+                tag957_support=_bool(root.get("tag957Support")),
+                change_strategy_on_cxl_rpl=_bool(root.get("changeStrategyOnCxlRpl")),
+                draft_flag_identifier_tag=_int(
+                    root.get("draftFlagIdentifierTag"), "Strategies/@draftFlagIdentifierTag"
                 ),
                 description=_description(root),
                 strategies=strategies,
