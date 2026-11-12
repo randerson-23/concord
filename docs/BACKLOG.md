@@ -78,21 +78,22 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `tag957Support`, 2 set `changeStrategyOnCxlRpl` (`regions-enums.xml`, `tz-clock.xml`),
     0 set `draftFlagIdentifierTag`; the strictness breaks none. Follow-up: the Orchestra writer
     (9a) should use `parameter_transport`; `848-pairs` waits for PDF extraction.
-9a. `todo` **FIX Orchestra writer, fields and codeSets.** `concord.orchestra`
-    writes an Orchestra repository with one field per algo parameter (custom
-    tags as user-defined fields) and one codeSet per enum, plus the strategy
-    identifier field with a codeSet of strategy wire values. Follow the draft
-    *Recommended Practices: Onboarding with FIX Orchestra*
-    (<https://forum.fixtrading.org/t/public-comment-period-fix-recommended-practices-onboarding-with-fix-orchestra/17170>).
-    Acceptance: deterministic (byte-identical test); lxml XPath tests on the
-    `example_broker.xml` fixture output for field ids, types and codes. No CLI yet.
+9a. `done 2026-11-12` **FIX Orchestra writer, fields and codeSets.** Done (decision D17):
+    `concord.orchestra.write_orchestra(spec) -> OrchestraResult` (`.xml` bytes,
+    `.group_parameters`). Orchestra 1.0 / 2020 namespace in one constant. Fields per distinct tag,
+    code sets for enum parameters and the strategy identifier, legal names, standard-tag
+    annotation, conflicting definitions raise `OrchestraError`. The output validates against the
+    real v1.6 XSD (checked locally with `CONCORD_ORCHESTRA_XSD_DIR`). The schema forces a
+    message, so a minimal `NewOrderSingle` (strategy identifier only) is emitted for 9b to fill.
+    No CLI yet. Follow-ups: 9b (message members, encoding, CLI); revisit at Orchestra 1.1 final.
 9b. `todo` **FIX Orchestra writer, NewOrderSingle and CLI.** Add a NewOrderSingle
     message referencing the fields from 9a (encoding-aware per item 10), and
     `concord convert spec.json out.xml --to orchestra`. Schema validation is opt-in
     through `CONCORD_ORCHESTRA_XSD_DIR` (skipped when unset), matching the FIXatdl
     pattern. The XSDs can be fetched (checked 2026-11-07): `repository.xsd`,
     `repositorytypes.xsd` and the `dc*` / `xml.xsd` imports are under
-    `repository/src/main/resources/xsd/` in `FIXTradingCommunity/fix-orchestra`,
+    `repository/src/main/resources/xsd/` in `FIXTradingCommunity/fix-orchestra`
+    (use tag `v1.6` for Orchestra 1.0, per 9a),
     which is Apache-2.0 (corpus id `fix-orchestra-repository-xsd`, pinned).
     D7 allows vendoring them with attribution (a NOTICE entry). Fetching on
     demand like the FIXatdl XSD is also fine. The worker picks one and records it.

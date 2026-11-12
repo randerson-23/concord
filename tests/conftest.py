@@ -30,3 +30,23 @@ def fixatdl_schema() -> etree.XMLSchema:
         pytest.skip(f"{core} not found")
     parser = etree.XMLParser(no_network=True, resolve_entities=False)
     return etree.XMLSchema(etree.parse(str(core), parser))
+
+
+@pytest.fixture(scope="session")
+def orchestra_schema() -> etree.XMLSchema:
+    """The Orchestra 1.0 repository schema (tag v1.6), if available locally.
+
+    Point CONCORD_ORCHESTRA_XSD_DIR at a directory holding repository.xsd and its
+    siblings (see D15 for fetching them). The XSD imports xml.xsd from w3.org; that
+    one import is redirected to the local copy so no network access is needed.
+    """
+    xsd_dir = os.environ.get("CONCORD_ORCHESTRA_XSD_DIR")
+    if not xsd_dir:
+        pytest.skip("CONCORD_ORCHESTRA_XSD_DIR not set")
+    repo = Path(xsd_dir) / "repository.xsd"
+    if not repo.exists():
+        pytest.skip(f"{repo} not found")
+    text = repo.read_text(encoding="utf-8").replace("http://www.w3.org/2001/03/xml.xsd", "xml.xsd")
+    parser = etree.XMLParser(no_network=True, resolve_entities=False)
+    doc = etree.fromstring(text.encode(), parser, base_url=str(repo))
+    return etree.XMLSchema(doc)

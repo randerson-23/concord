@@ -6,12 +6,12 @@
 
 ## Last run
 
-**2026-11-11 (daily firing) — wire-contract attributes.** Worker made the IR and FIXatdl round trip
-keep `tag957Support`, `changeStrategyOnCxlRpl` and `draftFlagIdentifierTag` (D16), which were
-silently dropped before. Diff classifies them, the site index shows them, and the reader rejects a
-tagless parameter unless `tag957Support="true"`. Public samples (29): 0 set `tag957Support`, 2 set
-`changeStrategyOnCxlRpl`, 0 set `draftFlagIdentifierTag`. No new dependency. Before that:
-amendability on the site (8), change report (23), split glyphs (22), PDF tables (21).
+**2026-11-12 (daily firing) — Orchestra writer, fields and code sets.** Worker added
+`concord.orchestra.write_orchestra` (decision D17): Orchestra 1.0 repository with one field per
+parameter tag, code sets for enums and for the strategy identifier, deterministic output, and an
+error (never a guess) when two strategies define a tag differently. Validated against the real
+v1.6 XSD locally; CI skips that check unless the XSD directory is set. No CLI yet (9b). No new
+dependency. Before that: wire-contract attributes (10), amendability (8), change report (23).
 
 ## Needs owner
 

@@ -141,3 +141,23 @@ breaking and gaining it is additive; unset and false are the same; a changed or 
 `draft_flag_identifier_tag` is breaking and a new one is additive. `parameter_transport(param)`
 returns `tag` or `957-group` for the Orchestra writer. `848-pairs` has no FIXatdl form and
 waits for PDF extraction.
+
+## D17 · 2026-11-12 · Orchestra writer targets 1.0 (2020 namespace); fields and code sets first
+
+`concord.orchestra.write_orchestra(spec)` writes Orchestra **1.0** (namespace
+`http://fixprotocol.io/2020/orchestra/repository`, repo tag `v1.6`, commit `68ce876`), the
+published standard that tools read. 1.1 is still a release candidate; the namespace is one
+constant (`NS_REPOSITORY`) so moving is a one-line change. Revisit when 1.1 is final.
+Rules: one field per distinct `fix_tag`; a tag defined differently by two strategies (name,
+type or enum values) raises `OrchestraError` naming both, never a guess (item 20 may relax
+this); field names are made legal (`[A-Za-z][A-Za-z0-9_]*`) and must stay unique; one code set
+per enum parameter (`<Field>CodeSet`, id = tag) and one for the strategy identifier; code id =
+tag * 1000 + position; tags under 5000 carry an annotation saying they are standard FIX fields;
+no timestamps. The schema requires a repository `version` matching `major.minor`, so it is
+`1.0`. The schema also requires at least one message, so 9a emits a `NewOrderSingle` whose
+structure holds only the strategy identifier; item 9b fills it in. Parameters with no tag
+(957 group) are not fields and are returned in `OrchestraResult.group_parameters`.
+Schema validation is opt-in with `CONCORD_ORCHESTRA_XSD_DIR` (the D15 method: fetch the pinned
+commit into git-ignored `corpus/cache`, point the variable at `repository/src/main/resources/xsd`).
+The XSD imports `xml.xsd` from w3.org, so the test fixture redirects that one import to the
+local copy. The XSDs stay out of the repo (Apache-2.0 would allow vendoring with a NOTICE).
