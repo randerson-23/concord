@@ -78,47 +78,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `tag957Support`, 2 set `changeStrategyOnCxlRpl` (`regions-enums.xml`, `tz-clock.xml`),
     0 set `draftFlagIdentifierTag`; the strictness breaks none. Follow-up: the Orchestra writer
     (9a) should use `parameter_transport`; `848-pairs` waits for PDF extraction.
-9a. `todo` **FIX Orchestra writer, fields and codeSets.** `concord.orchestra.write_orchestra(spec)
-    -> bytes` writes an Orchestra repository holding the spec's fields and code sets.
-    Target version (PM check, 2026-11-12): `FIXTradingCommunity/fix-orchestra` has two
-    lines of the repository schema.
-    - Orchestra **1.0**: tag `v1.6`, commit `68ce876`, 2021-02-03, namespace
-      `http://fixprotocol.io/2020/orchestra/repository`. This is the published standard.
-    - **1.1**: still a release candidate. `v1.1-rc3` is dated 2026-06-03, master is at
-      `8b61f49`, and its namespace is `http://fixprotocol.io/2026/orchestra/repository`.
-      The repo's own `mit_2016.xml` example uses a third namespace, 2022.
-    Write **1.0 / 2020** now, because published tools read it. Keep the namespace in
-    one constant so 1.1 is a one-line switch once it is final. Record this as a
-    D-entry (the next free number), with a follow-up to revisit at 1.1 final.
-    Do this:
-    - Root `fixr:repository` with `name` (provider) and `version` (both required in
-      the schema). `fixr:metadata` holds `dc:title` and `dc:publisher` from the spec.
-      Use no timestamps, for determinism.
-    - `fixr:fields`: one `fixr:field` per distinct parameter `fix_tag`, with `id`
-      the tag, `name`, and `type` mapped from the FIXatdl type (`Percentage` →
-      `Percentage`, `Qty` → `Qty`, `UTCTimestamp` → `UTCTimestamp`, `Char`,
-      `Boolean`, `Int`, `String`, `Price`, `Float`…; an unknown type is an error
-      naming the parameter). A parameter with an enum gets `codeSet` instead of
-      `type`. Add the strategy identifier field (`strategy_identifier_tag`) and,
-      when present, the version and draft-flag tags from item 10. Tags 1–4999
-      are standard FIX fields: emit them, marked with an annotation, so the file
-      stands alone.
-    - When the same tag appears with different names or types across strategies,
-      raise an error naming both strategies, and do not guess. Item 20 relaxes
-      this.
-    - `fixr:codeSets`: one `fixr:codeSet` per enum parameter (`name` =
-      `<Param>CodeSet`, `id` = tag, `type` = base type), plus one for the
-      strategy identifier holding every strategy's wire value. Each `fixr:code`
-      has `value` = wire value, `name` = a sanitised label or enum id, and `id`
-      a stable number derived deterministically, documented in the code.
-    - Parameters sent in the 957 group (`parameter_transport == "957-group"`) are
-      not fields. Leave them out here and list them in the result for 9b.
-    Acceptance: on the `example_broker.xml` output, lxml XPath tests check field
-    ids and names, `Urgency` → codeSet with codes `L` / `M` / `H`, the
-    identifier codeSet holds `1` and `2`, and the namespace is the 2020 one.
-    Output is byte-identical over two runs. The conflicting-tag case raises an
-    error. If `CONCORD_ORCHESTRA_XSD_DIR` is set (fetch the `v1.6` XSDs by the
-    D15 method), the output validates. No CLI yet (9b).
+9a. `done 2026-11-12` **FIX Orchestra writer, fields and codeSets.** Done (decision D17):
+    `concord.orchestra.write_orchestra(spec) -> OrchestraResult` (`.xml` bytes,
+    `.group_parameters`). Orchestra 1.0 / 2020 namespace in one constant. Fields per distinct tag,
+    code sets for enum parameters and the strategy identifier, legal names, standard-tag
+    annotation, conflicting definitions raise `OrchestraError`. The output validates against the
+    real v1.6 XSD (checked locally with `CONCORD_ORCHESTRA_XSD_DIR`). The schema forces a
+    message, so a minimal `NewOrderSingle` (strategy identifier only) is emitted for 9b to fill.
+    No CLI yet. Follow-ups: 9b (message members, encoding, CLI); revisit at Orchestra 1.1 final.
 9b. `todo` **FIX Orchestra writer, NewOrderSingle and CLI.** Add a NewOrderSingle
     message referencing the fields from 9a (encoding-aware per item 10), and
     `concord convert spec.json out.xml --to orchestra`. Schema validation is opt-in
