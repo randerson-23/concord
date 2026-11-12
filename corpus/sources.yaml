@@ -373,3 +373,6 @@ sources:
     notes: >-
       repository.xsd plus repositorytypes.xsd, dc.xsd, dcterms.xsd, dcmitype.xsd, xml.xsd. Example
       Orchestra file at repository/src/test/resources/examples/mit_2016.xml. For backlog item 9b.
+      PM 2026-11-12: the URL above (master, 8b61f49) is the 1.1 release candidate with namespace
+      http://fixprotocol.io/2026/orchestra/repository. Orchestra 1.0 (namespace .../2020/...) is tag
+      v1.6, commit 68ce876068aae1352b483ed8a41f1da3e3f9ea17 (2021-02-03), which is what 9a targets.
