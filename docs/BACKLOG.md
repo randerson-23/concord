@@ -86,25 +86,40 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     real v1.6 XSD (checked locally with `CONCORD_ORCHESTRA_XSD_DIR`). The schema forces a
     message, so a minimal `NewOrderSingle` (strategy identifier only) is emitted for 9b to fill.
     No CLI yet. Follow-ups: 9b (message members, encoding, CLI); revisit at Orchestra 1.1 final.
-9b. `todo` **FIX Orchestra writer, NewOrderSingle and CLI.** Add a NewOrderSingle
-    message referencing the fields from 9a (encoding-aware per item 10), and
-    `concord convert spec.json out.xml --to orchestra`. Schema validation is opt-in
-    through `CONCORD_ORCHESTRA_XSD_DIR` (skipped when unset), matching the FIXatdl
-    pattern. The XSDs can be fetched (checked 2026-11-07): `repository.xsd`,
-    `repositorytypes.xsd` and the `dc*` / `xml.xsd` imports are under
-    `repository/src/main/resources/xsd/` in `FIXTradingCommunity/fix-orchestra`
-    (use tag `v1.6` for Orchestra 1.0, per 9a),
-    which is Apache-2.0 (corpus id `fix-orchestra-repository-xsd`, pinned).
-    D7 allows vendoring them with attribution (a NOTICE entry). Fetching on
-    demand like the FIXatdl XSD is also fine. The worker picks one and records it.
-    `repository/src/test/resources/examples/mit_2016.xml` is a reference
-    Orchestra file to check the writer's structure against.
-    StrategyEdits: Orchestra writes conditional rules in its Score DSL
-    (`when` expressions). The FIX Trading Community moved its own standards work
-    onto Orchestra DSL tooling in July 2026, so emit rules as Score DSL there.
-    Do not drop them, and do not invent a custom extension.
-    Acceptance: CLI test writes the file and exits 0; XPath test for the message
-    members; determinism test.
+9b. `done 2026-11-13` **FIX Orchestra writer: NewOrderSingle per strategy, 957 group, CLI.**
+    Done (decision D18): one `NewOrderSingle` per strategy as a scenario, identifier constant,
+    `required` / `constant` / bounds on parameter `fieldRef`s, a 957 group with a 958 code set of
+    parameter names, and `concord convert FILE --to orchestra` (stdout). Note: v1.6 has no
+    `fixr:scenarios` element, so the "declare scenarios" step was dropped. Both the fixture output
+    and a 957-group case validate against the real v1.6 XSD when `CONCORD_ORCHESTRA_XSD_DIR` is
+    set (checked locally). Follow-ups: 9c (rules); a stderr summary of skipped items.
+9c. `todo` **FIX Orchestra writer: StrategyEdits as field rules where they fit.**
+    Correction to the 2026-11-09 note: Orchestra 1.0 field rules
+    (`fieldRef/rule` with `presence` and a Score DSL `when`) express only *when a
+    field is required or forbidden*. Most FIXatdl StrategyEdits are value checks,
+    for example `EndTime > StartTime` or `MaxPctVolume <= 0.25 OR Urgency == H`,
+    and have no Orchestra equivalent.
+    Do this:
+    - Map the presence patterns only. `F NX OR C` becomes a rule on F with
+      `presence="forbidden"` and `when` = `!(C)`. `F EX OR C` becomes a rule with
+      `presence="required"` and `when` = `!(C)`. Write `when` in Score syntax
+      (`==`, `!=`, `<`, `&&`, `||`, `!`, field names, quoted strings). If C
+      itself mentions F, as in `MinFillQty NX OR MinFillQty <= OrderQty`, the rule
+      is a value check, not a presence rule. Treat it as an annotation.
+    - Keep every other StrategyEdit as a `fixr:annotation/fixr:documentation` on
+      the message scenario. It holds the error message and the expression
+      rendered in Score syntax, so nothing is dropped. List these as "not
+      enforceable in Orchestra 1.0" in `concord convert` stderr.
+    - A parameter with `mutable_on_cxl_rpl = False` gets an annotation on an
+      OrderCancelReplaceRequest (`msgType="G"`) scenario saying it must equal the
+      original value. Orchestra 1.0 has no rule for "unchanged".
+    - Record the mapping as a D-entry.
+    Acceptance: all three fixture rules refer to their own field, so they become
+    annotations and are listed on stderr. A synthetic edit `StartTime NX OR
+    Urgency == H`, built in the test, becomes a rule on StartTime with
+    `presence="forbidden"` and `when` = `!(Urgency == "H")`. `AllowAuction`'s
+    cancel/replace annotation is present. Determinism holds, and XSD validation
+    passes when it is enabled.
 20. `todo` **IR: strategies that share a wire value or a fixTag.** Three public files
     are rejected by IR uniqueness checks: atdl4j `Example Strategy Filtering.xml` and
     `Example StrategyPanel Tests2.xml` (many strategies, same `wireValue`, distinguished by

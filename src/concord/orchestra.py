@@ -1,11 +1,13 @@
-"""FIX Orchestra writer: fields and code sets (backlog item 9a, decision D17).
+"""FIX Orchestra writer: fields, code sets and NewOrderSingle scenarios (items 9a/9b, D17/D18).
 
 Writes an Orchestra 1.0 repository (namespace ``fixprotocol.io/2020``) that holds one
 field per algo parameter tag, one code set per enumerated parameter and one for the
-strategy identifier. Deterministic: same IR in, same bytes out. No timestamps.
+strategy identifier, and one ``NewOrderSingle`` message per strategy (the strategy is
+the message ``scenario``). Deterministic: same IR in, same bytes out. No timestamps.
 
-Parameters without a ``fix_tag`` travel in the StrategyParameters group (957) and are
-not fields; they are listed on the result for the NewOrderSingle writer (item 9b).
+Parameters without a ``fix_tag`` travel in the StrategyParameters group (957-960): they
+become entries of a code set on StrategyParameterName (958) and are also listed on the
+result.
 """
 
 from __future__ import annotations
@@ -27,6 +29,8 @@ _NSMAP = {"fixr": NS_REPOSITORY, "dcterms": NS_DCTERMS}
 _NAME_OK = re.compile(r"[A-Za-z][A-Za-z0-9_]*")
 _NOT_NAME = re.compile(r"[^A-Za-z0-9_]+")
 _CODES_PER_SET = 1000  # code ids are tag * 1000 + position (1-based)
+GROUP_NUM_TAG = 957  # NoStrategyParameters, the StrategyParameters group
+_GROUP_NAME = "StrategyParametersGrp"
 
 # Orchestra spells a few datatypes in lower case; the rest match the FIX name.
 _DATATYPE_NAMES = {
@@ -133,6 +137,13 @@ def _collect(spec: AlgoSpec) -> tuple[dict[int, _Field], list[tuple[str, str]]]:
                 continue
             assert param.fix_tag is not None
             register(_param_field(strategy, param))
+    if group:
+        names = list(dict.fromkeys(name for _, name in group))  # first-seen order
+        origin = "the StrategyParameters group (957)"
+        register(_Field(957, "NoStrategyParameters", "NumInGroup", None, origin))
+        register(_Field(958, "StrategyParameterName", "String", [(n, n) for n in names], origin))
+        register(_Field(959, "StrategyParameterType", "int", None, origin))
+        register(_Field(960, "StrategyParameterValue", "String", None, origin))
     return fields, group
 
 
@@ -174,6 +185,54 @@ def _code_names(codes: list[tuple[str, str]]) -> list[str]:
             name, n = f"{base}_{n}", n + 1
         names.append(name)
     return names
+
+
+def _scenario_names(spec: AlgoSpec) -> dict[str, str]:
+    """Strategy name -> Orchestra scenario name (letters, digits, ``_`` and ``-``)."""
+    names: dict[str, str] = {}
+    used: dict[str, str] = {}
+    for strategy in spec.strategies:
+        scenario = sanitize_name(strategy.name, "S")
+        if scenario in used:
+            raise OrchestraError(
+                f"strategies {used[scenario]!r} and {strategy.name!r} both map to scenario "
+                f"{scenario!r}; expected distinct scenario names"
+            )
+        used[scenario] = strategy.name
+        names[strategy.name] = scenario
+    return names
+
+
+def _message(parent: etree._Element, spec: AlgoSpec, strategy: Strategy, scenario: str) -> None:
+    """One NewOrderSingle for one strategy: the identifier is constant, parameters follow."""
+    msg = etree.SubElement(
+        parent, _q("message"), id="14", name="NewOrderSingle", msgType="D", scenario=scenario
+    )
+    structure = etree.SubElement(msg, _q("structure"))
+    etree.SubElement(
+        structure,
+        _q("fieldRef"),
+        id=str(spec.strategy_identifier_tag),
+        presence="constant",
+        value=strategy.wire_value,
+    )
+    in_group = False
+    for param in strategy.parameters:
+        if parameter_transport(param) == "957-group":
+            in_group = True
+            continue
+        ref = etree.SubElement(structure, _q("fieldRef"), id=str(param.fix_tag))
+        if param.const_value is not None:
+            ref.set("presence", "constant")
+            ref.set("value", param.const_value)
+        elif param.required:
+            ref.set("presence", "required")
+        if param.min_value is not None:
+            ref.set("minInclusive", param.min_value)
+        if param.max_value is not None:
+            ref.set("maxInclusive", param.max_value)
+    if in_group:
+        etree.SubElement(structure, _q("groupRef"), id=str(GROUP_NUM_TAG))
 
 
 def write_orchestra(spec: AlgoSpec) -> OrchestraResult:
@@ -233,11 +292,23 @@ def write_orchestra(spec: AlgoSpec) -> OrchestraResult:
             ann.set("purpose", "ELABORATION")
             ann.text = "Standard FIX field (tag below 5000); name and type as given by the source."
 
-    # Orchestra requires a message; the full NewOrderSingle arrives with item 9b.
+    if group:
+        groups = etree.SubElement(root, _q("groups"))
+        grp = etree.SubElement(groups, _q("group"), id=str(GROUP_NUM_TAG), name=_GROUP_NAME)
+        etree.SubElement(grp, _q("numInGroup"), id="957")
+        for tag in (958, 959, 960):
+            etree.SubElement(grp, _q("fieldRef"), id=str(tag))
+
     messages = etree.SubElement(root, _q("messages"))
-    msg = etree.SubElement(messages, _q("message"), id="14", name="NewOrderSingle", msgType="D")
-    structure = etree.SubElement(msg, _q("structure"))
-    etree.SubElement(structure, _q("fieldRef"), id=str(spec.strategy_identifier_tag))
+    scenarios = _scenario_names(spec)
+    for strategy in spec.strategies:
+        _message(messages, spec, strategy, scenarios[strategy.name])
+    if not spec.strategies:  # the schema needs at least one message
+        base = etree.SubElement(
+            messages, _q("message"), id="14", name="NewOrderSingle", msgType="D"
+        )
+        structure = etree.SubElement(base, _q("structure"))
+        etree.SubElement(structure, _q("fieldRef"), id=str(spec.strategy_identifier_tag))
 
     xml = etree.tostring(root, xml_declaration=True, encoding="UTF-8", pretty_print=True)
     return OrchestraResult(xml=xml, group_parameters=group)

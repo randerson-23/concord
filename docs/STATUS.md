@@ -6,12 +6,11 @@
 
 ## Last run
 
-**2026-11-12 (daily firing) — Orchestra writer, fields and code sets.** Worker added
-`concord.orchestra.write_orchestra` (decision D17): Orchestra 1.0 repository with one field per
-parameter tag, code sets for enums and for the strategy identifier, deterministic output, and an
-error (never a guess) when two strategies define a tag differently. Validated against the real
-v1.6 XSD locally; CI skips that check unless the XSD directory is set. No CLI yet (9b). No new
-dependency. Before that: wire-contract attributes (10), amendability (8), change report (23).
+**2026-11-13 (daily firing) — Orchestra messages and CLI.** Worker finished the Orchestra writer's
+message side (D18): one `NewOrderSingle` per strategy as a scenario, constants, required, bounds,
+the 957 group with a code set of parameter names, and `concord convert FILE --to orchestra`.
+Both example outputs validate against the real v1.6 XSD locally. No new dependency. Before that:
+Orchestra fields and code sets (9a), wire-contract attributes (10), amendability (8).
 
 ## Needs owner
 
