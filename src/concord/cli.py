@@ -11,6 +11,7 @@ from concord.diff import diff_specs
 from concord.extract import AnthropicBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
 from concord.ir import AlgoSpec, SourceDocument
+from concord.orchestra import write_orchestra
 from concord.pdf import read_pdf
 from concord.site import write_site
 from concord.verify import verify_spec
@@ -63,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     i.add_argument("file")
     c = sub.add_parser("convert", help="convert between FIXatdl and IR JSON")
     c.add_argument("file")
-    c.add_argument("--to", choices=["json", "fixatdl"], required=True)
+    c.add_argument("--to", choices=["json", "fixatdl", "orchestra"], required=True)
     d = sub.add_parser("diff", help="classify the changes between two specs")
     d.add_argument("old")
     d.add_argument("new")
@@ -138,6 +139,8 @@ def main(argv: list[str] | None = None) -> int:
             spec = _load(args.file)
             if args.to == "json":
                 print(spec.model_dump_json(indent=2, exclude_none=True))
+            elif args.to == "orchestra":
+                sys.stdout.buffer.write(write_orchestra(spec).xml)
             else:
                 sys.stdout.buffer.write(write_fixatdl(spec))
     except (FixatdlError, ValueError, OSError, RuntimeError) as exc:

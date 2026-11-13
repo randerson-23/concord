@@ -86,36 +86,13 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     real v1.6 XSD (checked locally with `CONCORD_ORCHESTRA_XSD_DIR`). The schema forces a
     message, so a minimal `NewOrderSingle` (strategy identifier only) is emitted for 9b to fill.
     No CLI yet. Follow-ups: 9b (message members, encoding, CLI); revisit at Orchestra 1.1 final.
-9b. `todo` **FIX Orchestra writer: NewOrderSingle per strategy, 957 group, CLI.**
-    PM check 2026-11-13 against the Orchestra 1.0 schema (tag `v1.6`,
-    `repositorytypes.xsd`): `fixr:message` has `name`, `id` and `msgType`, plus a
-    `fixr:structure` of `fieldRef`/`groupRef`/`componentRef`. `fieldRef` carries
-    `id`, `presence` (`optional` by default) and `value`, and the oid group gives
-    every entity a `scenario` attribute.
-    Do this:
-    - Write one `fixr:message name="NewOrderSingle" msgType="D"` per strategy, each
-      with `scenario` = strategy name, and declare each scenario under
-      `fixr:scenarios`. This is how Orchestra says "same message, different
-      contract", and it avoids inventing message names.
-    - The structure has the strategy identifier field with `presence="constant"`
-      and `value` = wire value (check `presence_t` in the v1.6 XSD; if `constant`
-      is missing, use `required` plus a field rule). Then add one `fieldRef` per
-      tagged parameter, using `required` or `optional` from the IR, or `constant`
-      plus `value` for `const_value`. Add `minInclusive`/`maxInclusive` from the IR
-      bounds.
-    - Parameters sent in the 957 group (9a lists them) go in a `fixr:group` with
-      `numInGroup` 957 and fields 958, 959 and 960, added with `groupRef`. Give
-      StrategyParameterName (958) a code set of the parameter names, so the allowed
-      names stay machine-readable.
-    - CLI: `concord convert SPEC --to orchestra > out.xml` (follow the existing
-      `--to` pattern). Opt-in XSD validation goes through
-      `CONCORD_ORCHESTRA_XSD_DIR`, fetching `v1.6` with the D15 method. Do not
-      vendor the XSDs yet.
-    Acceptance: XPath tests on the `example_broker.xml` output check two
-    NewOrderSingle scenarios, an identifier constant of `1` and `2`, `Urgency`
-    required, `MaxPctVolume` bounds, and `Venue` constant `SMART`. Add one
-    synthetic 957-group case. Output is byte-identical across runs, the CLI exits 0,
-    and the opt-in validation passes.
+9b. `done 2026-11-13` **FIX Orchestra writer: NewOrderSingle per strategy, 957 group, CLI.**
+    Done (decision D18): one `NewOrderSingle` per strategy as a scenario, identifier constant,
+    `required` / `constant` / bounds on parameter `fieldRef`s, a 957 group with a 958 code set of
+    parameter names, and `concord convert FILE --to orchestra` (stdout). Note: v1.6 has no
+    `fixr:scenarios` element, so the "declare scenarios" step was dropped. Both the fixture output
+    and a 957-group case validate against the real v1.6 XSD when `CONCORD_ORCHESTRA_XSD_DIR` is
+    set (checked locally). Follow-ups: 9c (rules); a stderr summary of skipped items.
 9c. `todo` **FIX Orchestra writer: StrategyEdits as field rules where they fit.**
     Correction to the 2026-11-09 note: Orchestra 1.0 field rules
     (`fieldRef/rule` with `presence` and a Score DSL `when`) express only *when a

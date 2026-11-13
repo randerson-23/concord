@@ -161,3 +161,19 @@ Schema validation is opt-in with `CONCORD_ORCHESTRA_XSD_DIR` (the D15 method: fe
 commit into git-ignored `corpus/cache`, point the variable at `repository/src/main/resources/xsd`).
 The XSD imports `xml.xsd` from w3.org, so the test fixture redirects that one import to the
 local copy. The XSDs stay out of the repo (Apache-2.0 would allow vendoring with a NOTICE).
+
+## D18 · 2026-11-13 · Orchestra messages: one NewOrderSingle per strategy, as a scenario
+
+Each strategy is written as `NewOrderSingle` (`msgType="D"`, id 14) with `scenario` set to the
+strategy name made legal (`sanitize_name`; two strategies that collapse to one name raise
+`OrchestraError`). Orchestra 1.0 (v1.6) has no `fixr:scenarios` element: the `scenario`
+attribute alone declares it, and keys are unique on name + scenario. The strategy identifier is a
+`fieldRef` with `presence="constant"` and `value` = wire value. Each tagged parameter is a
+`fieldRef`: `required` when `required`, `constant` plus `value` for `const_value`, and
+`minInclusive` / `maxInclusive` from the IR bounds (otherwise the default, optional).
+957-group parameters go in one `group` (id 957, `StrategyParametersGrp`) with `numInGroup` 957
+and fieldRefs 958 / 959 / 960; 958 has a code set of every parameter name used by any strategy;
+a strategy gets a `groupRef` only when it has such parameters. A spec with no strategies gets one
+base message holding the identifier, because the schema needs a message. `concord convert FILE
+--to orchestra` writes the XML to stdout; `OrchestraError` exits 1. Supersedes the "minimal
+message" note in D17. StrategyEdits as rules are item 9c.
