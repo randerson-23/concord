@@ -93,40 +93,15 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `fixr:scenarios` element, so the "declare scenarios" step was dropped. Both the fixture output
     and a 957-group case validate against the real v1.6 XSD when `CONCORD_ORCHESTRA_XSD_DIR` is
     set (checked locally). Follow-ups: 9c (rules); a stderr summary of skipped items.
-9c. `todo` **FIX Orchestra writer: StrategyEdits as field rules where they fit.**
-    Correction to the 2026-11-09 note: Orchestra 1.0 field rules
-    (`fieldRef/rule` with `presence` and a Score DSL `when`) express only *when a
-    field is required or forbidden*. Most FIXatdl StrategyEdits are value checks,
-    for example `EndTime > StartTime` or `MaxPctVolume <= 0.25 OR Urgency == H`,
-    and have no Orchestra equivalent.
-    Do this:
-    - Map the presence patterns only. `F NX OR C` becomes a rule on F with
-      `presence="forbidden"` and `when` = `!(C)`. `F EX OR C` becomes a rule with
-      `presence="required"` and `when` = `!(C)`. Write `when` in Score syntax
-      (checked 2026-11-14 against `dsl-antlr/.../Score.g4` at tag `v1.6`, Apache-2.0).
-      Use the operators `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||` and `!`.
-      FIXatdl `EX` → `exists F` and `NX` → `!exists F`. A value of a field that
-      has a code set is written as a code reference `^CodeName`, using the code
-      `name` 9a assigned; any other value is a quoted string or a number. Real
-      examples in `mit_2016.xml`: `OrdType == ^Stop || OrdType == ^StopLimit`
-      and `in.OrdType in {^Stop, ^StopLimit}`. If C
-      itself mentions F, as in `MinFillQty NX OR MinFillQty <= OrderQty`, the rule
-      is a value check, not a presence rule. Treat it as an annotation.
-    - Keep every other StrategyEdit as a `fixr:annotation/fixr:documentation` on
-      the message scenario. It holds the error message and the expression
-      rendered in Score syntax, so nothing is dropped. List these as "not
-      enforceable in Orchestra 1.0" in `concord convert` stderr.
-    - A parameter with `mutable_on_cxl_rpl = False` gets an annotation on an
-      OrderCancelReplaceRequest (`msgType="G"`) scenario saying it must equal the
-      original value. Orchestra 1.0 has no rule for "unchanged".
-    - Record the mapping as a D-entry.
-    Acceptance: all three fixture rules refer to their own field, so they become
-    annotations and are listed on stderr. A synthetic edit `StartTime NX OR
-    Urgency == H`, built in the test, becomes a rule on StartTime with
-    `presence="forbidden"` and `when` = `!(Urgency == ^<name of code H>)`.
-    A unit test pins the FIXatdl-operator → Score mapping, one case per operator. `AllowAuction`'s
-    cancel/replace annotation is present. Determinism holds, and XSD validation
-    passes when it is enabled.
+9c. `done 2026-11-14` **FIX Orchestra writer: StrategyEdits as field rules where they fit.**
+    Done (decision D19): new `concord.score` renders edits in Score (one test per operator) and
+    recognises `F NX|EX OR C`; the writer turns those into `fixr:rule` presence rules and keeps all
+    other edits as message annotations, returned in `OrchestraResult.unenforced` and printed on
+    stderr by `concord convert --to orchestra`. Non-amendable parameters get an
+    `OrderCancelReplaceRequest` scenario note. All four fixture edits read their own field, so they
+    are annotations; a synthetic `StartTime NX OR Urgency == H` becomes a forbidden rule with
+    `!(Urgency == ^High)`. Validates against the v1.6 XSD (opt-in, checked locally). Follow-ups:
+    a CLI `--strict` that fails when anything is unenforced; revisit when Orchestra 1.1 is final.
 20. `todo` **IR: strategies that share a wire value or a fixTag.** Three public files
     are rejected by IR uniqueness checks: atdl4j `Example Strategy Filtering.xml` and
     `Example StrategyPanel Tests2.xml` (many strategies, same `wireValue`, distinguished by

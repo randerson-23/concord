@@ -140,7 +140,14 @@ def main(argv: list[str] | None = None) -> int:
             if args.to == "json":
                 print(spec.model_dump_json(indent=2, exclude_none=True))
             elif args.to == "orchestra":
-                sys.stdout.buffer.write(write_orchestra(spec).xml)
+                result = write_orchestra(spec)
+                sys.stdout.buffer.write(result.xml)
+                for strategy_name, message in result.unenforced:
+                    print(
+                        f"note: not enforceable in Orchestra 1.0 (kept as annotation): "
+                        f"{strategy_name}: {message}",
+                        file=sys.stderr,
+                    )
             else:
                 sys.stdout.buffer.write(write_fixatdl(spec))
     except (FixatdlError, ValueError, OSError, RuntimeError) as exc:

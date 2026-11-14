@@ -177,3 +177,20 @@ a strategy gets a `groupRef` only when it has such parameters. A spec with no st
 base message holding the identifier, because the schema needs a message. `concord convert FILE
 --to orchestra` writes the XML to stdout; `OrchestraError` exits 1. Supersedes the "minimal
 message" note in D17. StrategyEdits as rules are item 9c.
+
+## D19 · 2026-11-14 · StrategyEdits in Orchestra: presence rules only; the rest is annotation
+
+A FIXatdl `StrategyEdit` is the condition under which an order is valid. Orchestra 1.0 field rules
+only say when a field is required or forbidden, so `concord.score` maps two patterns and nothing
+else: `F NX OR C` becomes a rule on F with `presence="forbidden"` and `when` = `!(C)`; `F EX OR C`
+becomes `presence="required"` with the same `when`. The pattern must not have C read F itself (that
+is a value check) and F must be a tagged parameter of the strategy, else it stays an annotation.
+Every other edit is kept as a `documentation` note on the strategy's NewOrderSingle ("Not
+enforceable in Orchestra 1.0: <message> Valid when: <Score>"), is returned in
+`OrchestraResult.unenforced`, and is printed to stderr by `concord convert --to orchestra`, so
+nothing is dropped silently. Score follows `Score.g4` at v1.6: `== != < <= > >= && || !`,
+`exists F`, `^CodeName` for values of a field with a code set (the code name 9a assigned), quoted
+strings, numbers; Score has no xor, so XOR is expanded; `FIX_X` is written as `X`. A parameter with
+`mutable_on_cxl_rpl = False` gets a note on an `OrderCancelReplaceRequest` (msgType G, id 17)
+scenario for that strategy: it must equal the value in the order being replaced (Orchestra 1.0 has
+no "unchanged" rule).
