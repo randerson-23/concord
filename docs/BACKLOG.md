@@ -103,7 +103,13 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     - Map the presence patterns only. `F NX OR C` becomes a rule on F with
       `presence="forbidden"` and `when` = `!(C)`. `F EX OR C` becomes a rule with
       `presence="required"` and `when` = `!(C)`. Write `when` in Score syntax
-      (`==`, `!=`, `<`, `&&`, `||`, `!`, field names, quoted strings). If C
+      (checked 2026-11-14 against `dsl-antlr/.../Score.g4` at tag `v1.6`, Apache-2.0).
+      Use the operators `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||` and `!`.
+      FIXatdl `EX` → `exists F` and `NX` → `!exists F`. A value of a field that
+      has a code set is written as a code reference `^CodeName`, using the code
+      `name` 9a assigned; any other value is a quoted string or a number. Real
+      examples in `mit_2016.xml`: `OrdType == ^Stop || OrdType == ^StopLimit`
+      and `in.OrdType in {^Stop, ^StopLimit}`. If C
       itself mentions F, as in `MinFillQty NX OR MinFillQty <= OrderQty`, the rule
       is a value check, not a presence rule. Treat it as an annotation.
     - Keep every other StrategyEdit as a `fixr:annotation/fixr:documentation` on
@@ -117,7 +123,8 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     Acceptance: all three fixture rules refer to their own field, so they become
     annotations and are listed on stderr. A synthetic edit `StartTime NX OR
     Urgency == H`, built in the test, becomes a rule on StartTime with
-    `presence="forbidden"` and `when` = `!(Urgency == "H")`. `AllowAuction`'s
+    `presence="forbidden"` and `when` = `!(Urgency == ^<name of code H>)`.
+    A unit test pins the FIXatdl-operator → Score mapping, one case per operator. `AllowAuction`'s
     cancel/replace annotation is present. Determinism holds, and XSD validation
     passes when it is enabled.
 20. `todo` **IR: strategies that share a wire value or a fixTag.** Three public files
