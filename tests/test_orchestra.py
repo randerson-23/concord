@@ -7,7 +7,7 @@ from lxml import etree
 
 from concord.cli import main
 from concord.fixatdl import read_fixatdl
-from concord.ir import AlgoSpec, EnumValue, Parameter, ParamType, Strategy
+from concord.ir import AlgoSpec, Edit, EnumValue, Parameter, ParamType, Strategy, StrategyEdit
 from concord.orchestra import NS_REPOSITORY, OrchestraError, sanitize_name, write_orchestra
 
 NS = {"fixr": NS_REPOSITORY}
@@ -193,12 +193,12 @@ def test_output_validates_against_the_orchestra_schema(
 
 
 def _msg(doc, scenario):
-    (m,) = _x(doc, f"//fixr:message[@scenario='{scenario}']")
+    (m,) = _x(doc, f"//fixr:message[@scenario='{scenario}'][@msgType='D']")
     return m
 
 
 def test_one_new_order_single_per_strategy_scenario(doc) -> None:
-    msgs = _x(doc, "//fixr:message")
+    msgs = _x(doc, "//fixr:message[@msgType='D']")
     assert [(m.get("name"), m.get("msgType"), m.get("scenario")) for m in msgs] == [
         ("NewOrderSingle", "D", "EXBK_VWAP"),
         ("NewOrderSingle", "D", "EXBK_TWAP"),
@@ -287,3 +287,123 @@ def test_cli_reports_orchestra_errors(tmp_path, capsys) -> None:
     )
     assert main(["convert", str(src), "--to", "orchestra"]) == 1
     assert "tag 7001" in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------- 9c: rules
+
+
+def _doc(spec):
+    return etree.fromstring(write_orchestra(spec).xml)
+
+
+def test_fixture_edits_are_annotations_and_listed(example_broker_bytes) -> None:
+    spec = read_fixatdl(example_broker_bytes).spec
+    result = write_orchestra(spec)
+    doc = etree.fromstring(result.xml)
+    assert not _x(doc, "//fixr:rule")  # every fixture edit reads its own field
+    notes = _x(_msg(doc, "EXBK_VWAP"), "fixr:annotation/fixr:documentation/text()")
+    assert len(notes) == 3 and all(n.startswith("Not enforceable in Orchestra 1.0") for n in notes)
+    assert "MinFillQty <= OrderQty" in notes[2]  # FIX_ prefix dropped
+    assert "MaxPctVolume <= 0.25 || Urgency == ^Aggressive" in notes[1]  # code reference
+    assert [s for s, _ in result.unenforced] == ["EXBK_VWAP"] * 3 + ["EXBK_TWAP"]
+    assert result.unenforced[0][1] == "End time must be after start time."
+
+
+def _with_edit(edit):
+    return AlgoSpec(
+        strategies=[
+            Strategy(
+                name="S",
+                wire_value="1",
+                parameters=[
+                    Parameter(name="StartTime", type=ParamType.UTC_TIMESTAMP, fix_tag=7001),
+                    Parameter(
+                        name="Urgency",
+                        type=ParamType.CHAR,
+                        fix_tag=7002,
+                        enum_values=[
+                            EnumValue(wire_value="L", label="Low"),
+                            EnumValue(wire_value="H", label="High"),
+                        ],
+                    ),
+                ],
+                edits=[StrategyEdit(message="Start time only with high urgency.", edit=edit)],
+            )
+        ]
+    )
+
+
+def test_presence_pattern_becomes_a_field_rule() -> None:
+    edit = Edit(
+        logic="OR",
+        children=[
+            Edit(field="StartTime", operator="NX"),
+            Edit(field="Urgency", operator="EQ", value="H"),
+        ],
+    )
+    out = _doc(_with_edit(edit))
+    (rule,) = _x(_msg(out, "S"), "fixr:structure/fixr:fieldRef[@id='7001']/fixr:rule")
+    assert rule.get("presence") == "forbidden"
+    assert _x(rule, "fixr:when/text()") == ["!(Urgency == ^High)"]
+    assert not _x(_msg(out, "S"), "fixr:annotation")  # converted, so not also annotated
+
+
+def test_required_variant_and_multi_condition() -> None:
+    edit = Edit(
+        logic="OR",
+        children=[
+            Edit(field="StartTime", operator="EX"),
+            Edit(field="Urgency", operator="EQ", value="L"),
+            Edit(field="Urgency", operator="NE", value="H"),
+        ],
+    )
+    (rule,) = _x(_doc(_with_edit(edit)), "//fixr:rule")
+    assert rule.get("presence") == "required"
+    assert _x(rule, "fixr:when/text()") == ["!(Urgency == ^Low || Urgency != ^High)"]
+
+
+def test_rule_on_an_untagged_field_stays_an_annotation() -> None:
+    edit = Edit(
+        logic="OR",
+        children=[
+            Edit(field="FIX_OrderQty", operator="NX"),
+            Edit(field="Urgency", operator="EQ", value="H"),
+        ],
+    )
+    out = _doc(_with_edit(edit))
+    assert not _x(out, "//fixr:rule")
+    assert (
+        "!exists OrderQty || Urgency == ^High"
+        in _x(_msg(out, "S"), "fixr:annotation/fixr:documentation/text()")[0]
+    )
+
+
+def test_cancel_replace_scenario_notes_non_amendable_parameters(doc) -> None:
+    (cr,) = _x(doc, "//fixr:message[@msgType='G']")
+    assert (cr.get("name"), cr.get("id"), cr.get("scenario")) == (
+        "OrderCancelReplaceRequest",
+        "17",
+        "EXBK_VWAP",
+    )
+    (note,) = _x(cr, "fixr:annotation/fixr:documentation/text()")
+    assert note.startswith("AllowAuction cannot be amended")
+    assert _x(cr, "fixr:structure/fixr:fieldRef/@id") == ["7620", "7606"]
+
+
+def test_cli_lists_unenforceable_edits_on_stderr(capsysbinary) -> None:
+    fixture = "tests/fixtures/fixatdl/example_broker.xml"
+    assert main(["convert", fixture, "--to", "orchestra"]) == 0
+    err = capsysbinary.readouterr().err.decode()
+    assert err.count("not enforceable in Orchestra 1.0") == 4
+    assert "EXBK_TWAP: End time must be after start time." in err
+
+
+def test_rule_output_validates_against_the_schema(orchestra_schema) -> None:
+    edit = Edit(
+        logic="OR",
+        children=[
+            Edit(field="StartTime", operator="NX"),
+            Edit(field="Urgency", operator="EQ", value="H"),
+        ],
+    )
+    assert orchestra_schema.validate(_doc(_with_edit(edit))), orchestra_schema.error_log

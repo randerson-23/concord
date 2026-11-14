@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from lxml import etree
 
 from concord.ir import AlgoSpec, Parameter, ParamType, Strategy, parameter_transport
+from concord.score import ScoreError, presence_rule, to_score
+from concord.site import edit_text
 
 # One constant, so moving to Orchestra 1.1 (namespace .../2026/...) is a one-line change.
 NS_REPOSITORY = "http://fixprotocol.io/2020/orchestra/repository"
@@ -50,6 +52,9 @@ class OrchestraResult:
     xml: bytes
     # (strategy name, parameter name) for parameters that travel in the 957 group.
     group_parameters: list[tuple[str, str]] = field(default_factory=list)
+    # (strategy name, error message) for StrategyEdits Orchestra 1.0 cannot enforce; they are
+    # kept as message annotations.
+    unenforced: list[tuple[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -203,8 +208,45 @@ def _scenario_names(spec: AlgoSpec) -> dict[str, str]:
     return names
 
 
-def _message(parent: etree._Element, spec: AlgoSpec, strategy: Strategy, scenario: str) -> None:
-    """One NewOrderSingle for one strategy: the identifier is constant, parameters follow."""
+def _annotate(parent: etree._Element, texts: list[str]) -> None:
+    if not texts:
+        return
+    ann = etree.SubElement(parent, _q("annotation"))
+    for text in texts:
+        doc = etree.SubElement(ann, _q("documentation"), purpose="ELABORATION")
+        doc.text = text
+
+
+def _names_for(strategy: Strategy, code_names_by_tag: dict[int, dict[str, str]]):
+    """Field-name and code-name lookups for rendering this strategy's edits as Score."""
+    params = {p.name: p for p in strategy.parameters}
+
+    def field_name(name: str) -> str:
+        if name in params:
+            return sanitize_name(name, "P")
+        return sanitize_name(name.removeprefix("FIX_"), "F")  # FIX_OrderQty -> OrderQty
+
+    def code_name(name: str, value: str) -> str | None:
+        param = params.get(name)
+        if param is None or param.fix_tag is None:
+            return None
+        return code_names_by_tag.get(param.fix_tag, {}).get(value)
+
+    return field_name, code_name
+
+
+def _message(
+    parent: etree._Element,
+    spec: AlgoSpec,
+    strategy: Strategy,
+    scenario: str,
+    code_names_by_tag: dict[int, dict[str, str]],
+) -> list[str]:
+    """One NewOrderSingle for one strategy; returns the messages of edits it cannot enforce.
+
+    The identifier is constant, parameters follow. Edits of the presence form become
+    field rules; every other edit stays as an annotation (D19).
+    """
     msg = etree.SubElement(
         parent, _q("message"), id="14", name="NewOrderSingle", msgType="D", scenario=scenario
     )
@@ -216,12 +258,14 @@ def _message(parent: etree._Element, spec: AlgoSpec, strategy: Strategy, scenari
         presence="constant",
         value=strategy.wire_value,
     )
+    refs: dict[str, etree._Element] = {}
     in_group = False
     for param in strategy.parameters:
         if parameter_transport(param) == "957-group":
             in_group = True
             continue
         ref = etree.SubElement(structure, _q("fieldRef"), id=str(param.fix_tag))
+        refs[param.name] = ref
         if param.const_value is not None:
             ref.set("presence", "constant")
             ref.set("value", param.const_value)
@@ -233,6 +277,66 @@ def _message(parent: etree._Element, spec: AlgoSpec, strategy: Strategy, scenari
             ref.set("maxInclusive", param.max_value)
     if in_group:
         etree.SubElement(structure, _q("groupRef"), id=str(GROUP_NUM_TAG))
+
+    field_name, code_name = _names_for(strategy, code_names_by_tag)
+    notes: list[str] = []
+    unenforced: list[str] = []
+    for edit in strategy.edits:
+        rule = presence_rule(edit.edit)
+        ref = refs.get(rule.field) if rule else None
+        try:
+            if rule is not None and ref is not None:
+                when = f"!({to_score(rule.unless, field_name, code_name)})"
+                el = etree.SubElement(
+                    ref,
+                    _q("rule"),
+                    name=f"{field_name(rule.field)}_{rule.presence}",
+                    presence=rule.presence,
+                )
+                etree.SubElement(el, _q("when")).text = when
+                continue
+            expr = to_score(edit.edit, field_name, code_name)
+        except ScoreError:
+            expr = f"(no Score form) {edit_text(edit.edit)}"
+        notes.append(f"Not enforceable in Orchestra 1.0: {edit.message} Valid when: {expr}")
+        unenforced.append(edit.message)
+    _annotate(msg, notes)
+    _cancel_replace(parent, spec, strategy, scenario)
+    return unenforced
+
+
+def _cancel_replace(
+    parent: etree._Element, spec: AlgoSpec, strategy: Strategy, scenario: str
+) -> None:
+    """Parameters that are not amendable get a note on an OrderCancelReplaceRequest scenario."""
+    fixed = [p for p in strategy.parameters if p.mutable_on_cxl_rpl is False]
+    if not fixed:
+        return
+    msg = etree.SubElement(
+        parent,
+        _q("message"),
+        id="17",
+        name="OrderCancelReplaceRequest",
+        msgType="G",
+        scenario=scenario,
+    )
+    structure = etree.SubElement(msg, _q("structure"))
+    etree.SubElement(
+        structure,
+        _q("fieldRef"),
+        id=str(spec.strategy_identifier_tag),
+        presence="constant",
+        value=strategy.wire_value,
+    )
+    notes = []
+    for param in fixed:
+        if param.fix_tag is not None:
+            etree.SubElement(structure, _q("fieldRef"), id=str(param.fix_tag))
+        notes.append(
+            f"{param.name} cannot be amended: it must equal its value in the order being "
+            "replaced. Orchestra 1.0 has no rule for an unchanged value."
+        )
+    _annotate(msg, notes)
 
 
 def write_orchestra(spec: AlgoSpec) -> OrchestraResult:
@@ -299,10 +403,17 @@ def write_orchestra(spec: AlgoSpec) -> OrchestraResult:
         for tag in (958, 959, 960):
             etree.SubElement(grp, _q("fieldRef"), id=str(tag))
 
+    code_names_by_tag = {
+        f.tag: dict(zip((w for w, _ in f.codes), _code_names(f.codes), strict=True))
+        for f in by_tag
+        if f.codes is not None
+    }
     messages = etree.SubElement(root, _q("messages"))
     scenarios = _scenario_names(spec)
+    unenforced: list[tuple[str, str]] = []
     for strategy in spec.strategies:
-        _message(messages, spec, strategy, scenarios[strategy.name])
+        skipped = _message(messages, spec, strategy, scenarios[strategy.name], code_names_by_tag)
+        unenforced += [(strategy.name, text) for text in skipped]
     if not spec.strategies:  # the schema needs at least one message
         base = etree.SubElement(
             messages, _q("message"), id="14", name="NewOrderSingle", msgType="D"
@@ -311,4 +422,4 @@ def write_orchestra(spec: AlgoSpec) -> OrchestraResult:
         etree.SubElement(structure, _q("fieldRef"), id=str(spec.strategy_identifier_tag))
 
     xml = etree.tostring(root, xml_declaration=True, encoding="UTF-8", pretty_print=True)
-    return OrchestraResult(xml=xml, group_parameters=group)
+    return OrchestraResult(xml=xml, group_parameters=group, unenforced=unenforced)

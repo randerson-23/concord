@@ -6,11 +6,11 @@
 
 ## Last run
 
-**2026-11-13 (daily firing) — Orchestra messages and CLI.** Worker finished the Orchestra writer's
-message side (D18): one `NewOrderSingle` per strategy as a scenario, constants, required, bounds,
-the 957 group with a code set of parameter names, and `concord convert FILE --to orchestra`.
-Both example outputs validate against the real v1.6 XSD locally. No new dependency. Before that:
-Orchestra fields and code sets (9a), wire-contract attributes (10), amendability (8).
+**2026-11-14 (daily firing) — Orchestra rules.** Worker added `concord.score` and the rule side of
+the Orchestra writer (D19): `F NX|EX OR C` edits become presence rules in Score syntax; every other
+edit stays as an annotation and is listed on stderr, so nothing is dropped silently. Non-amendable
+parameters get an `OrderCancelReplaceRequest` note. Validated against the real v1.6 XSD locally. No
+new dependency. Before that: Orchestra messages and CLI (9b), fields and code sets (9a).
 
 ## Needs owner
 
