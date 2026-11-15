@@ -315,10 +315,8 @@ class Strategy(_Cited):
         dupes = {n for n in names if names.count(n) > 1}
         if dupes:
             raise ValueError(f"strategy {self.name!r}: duplicate parameter names {sorted(dupes)}")
-        tags = [p.fix_tag for p in self.parameters if p.fix_tag is not None]
-        dupe_tags = {t for t in tags if tags.count(t) > 1}
-        if dupe_tags:
-            raise ValueError(f"strategy {self.name!r}: tag used twice {sorted(dupe_tags)}")
+        # Parameter identity is the name (D20): two parameters may share a fix_tag, as when
+        # state rules switch between them.
         return self
 
     def parameter(self, name: str) -> Parameter:
@@ -362,9 +360,8 @@ class AlgoSpec(_Model):
         names = [s.name for s in self.strategies]
         if len(names) != len(set(names)):
             raise ValueError("duplicate strategy names")
-        wires = [s.wire_value for s in self.strategies]
-        if len(wires) != len(set(wires)):
-            raise ValueError("duplicate strategy wire values")
+        # Strategy identity is the name (D20): strategies may share a wire value, told apart
+        # by fixMsgType, region or market filters.
         source_ids = {s.id for s in self.sources}
         missing = {c.source_id for c in self.iter_citations()} - source_ids
         if missing:

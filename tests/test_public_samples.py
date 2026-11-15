@@ -38,14 +38,6 @@ REPOS = {
 # Deliberate negatives: must raise a FixatdlError that names the location.
 NEGATIVE = {"invalid-schema.xml": "Strategy without @name"}
 
-# Files the IR cannot hold yet. Strict: when a gap is fixed, the xfail must go.
-_SHARED_WIRE = "several strategies share one wireValue (IR requires unique)"
-KNOWN_GAPS = {
-    "Example Strategy Filtering.xml": _SHARED_WIRE,
-    "Example StrategyPanel Tests2.xml": _SHARED_WIRE,
-    "tz-clock.xml": "two parameters of one strategy share a fixTag (IR requires unique)",
-}
-
 
 def _fetch(corpus_id: str, url: str, sha: str) -> Path | None:
     dest = CACHE / corpus_id
@@ -85,14 +77,7 @@ def _samples() -> list:
             )
             continue
         for path in sorted(root.glob(pattern)):
-            marks = []
-            if path.name in KNOWN_GAPS:
-                marks.append(
-                    pytest.mark.xfail(
-                        reason=KNOWN_GAPS[path.name], raises=FixatdlError, strict=True
-                    )
-                )
-            out.append(pytest.param(path, id=f"{corpus_id}/{path.relative_to(root)}", marks=marks))
+            out.append(pytest.param(path, id=f"{corpus_id}/{path.relative_to(root)}"))
     return out
 
 

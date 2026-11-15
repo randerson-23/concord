@@ -89,6 +89,15 @@ def _identifier_datatype(spec: AlgoSpec) -> str:
     return "int" if wires and all(w.isdigit() for w in wires) else "String"
 
 
+def _identifier_codes(spec: AlgoSpec) -> list[tuple[str, str]]:
+    """One code per distinct wire value; strategies sharing a wire value (D20) share a code,
+    named after the first of them. Scenarios stay keyed by strategy name."""
+    first: dict[str, str] = {}
+    for strategy in spec.strategies:
+        first.setdefault(strategy.wire_value, strategy.name)
+    return list(first.items())
+
+
 def _collect(spec: AlgoSpec) -> tuple[dict[int, _Field], list[tuple[str, str]]]:
     fields: dict[int, _Field] = {}
     group: list[tuple[str, str]] = []
@@ -103,7 +112,7 @@ def _collect(spec: AlgoSpec) -> tuple[dict[int, _Field], list[tuple[str, str]]]:
                 f"tag {new.tag} is defined differently by {old.origin} "
                 f"({old.name}, {old.datatype}) and {new.origin} ({new.name}, {new.datatype}"
                 f"{'' if old.codes == new.codes else ', different enum values'}); "
-                "expected one definition per tag"
+                "Orchestra needs one name and type per field, so these cannot share a tag"
             )
 
     register(
@@ -111,7 +120,7 @@ def _collect(spec: AlgoSpec) -> tuple[dict[int, _Field], list[tuple[str, str]]]:
             spec.strategy_identifier_tag,
             "TargetStrategy" if spec.strategy_identifier_tag == 847 else "StrategyIdentifier",
             _identifier_datatype(spec),
-            [(s.wire_value, s.name) for s in spec.strategies],
+            _identifier_codes(spec),
             "the strategy identifier",
         )
     )

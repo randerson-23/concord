@@ -6,11 +6,11 @@
 
 ## Last run
 
-**2026-11-14 (daily firing) — Orchestra rules.** Worker added `concord.score` and the rule side of
-the Orchestra writer (D19): `F NX|EX OR C` edits become presence rules in Score syntax; every other
-edit stays as an annotation and is listed on stderr, so nothing is dropped silently. Non-amendable
-parameters get an `OrderCancelReplaceRequest` note. Validated against the real v1.6 XSD locally. No
-new dependency. Before that: Orchestra messages and CLI (9b), fields and code sets (9a).
+**2026-11-15 (daily firing) — shared identity.** Worker made strategies and parameters identified by
+name (D20): the IR accepts a shared strategy wire value and a shared tag in one strategy, which the
+public samples use. All 28 public sample files now pass (the three xfails are gone; earlier "29"
+was a miscount). Diff, Orchestra and the site handle the shared values. No new dependency. Before
+that: Orchestra rules (9c), messages (9b), fields and code sets (9a).
 
 ## Needs owner
 

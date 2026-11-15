@@ -353,3 +353,48 @@ def test_unset_and_false_wire_contract_do_not_differ():
     b.tag957_support = False
     b.change_strategy_on_cxl_rpl = False
     assert diff_specs(a, b).changes == []
+
+
+# --------------------------------------------------------------------------- shared identity (D20)
+
+
+def _kinds(report):
+    return sorted(c.kind for c in report.changes)
+
+
+def test_shared_wire_value_does_not_cause_a_wrong_strategy_rename() -> None:
+    old = AlgoSpec(
+        strategies=[Strategy(name="A", wire_value="3"), Strategy(name="B", wire_value="3")]
+    )
+    new = AlgoSpec(
+        strategies=[Strategy(name="A", wire_value="3"), Strategy(name="C", wire_value="3")]
+    )
+    # B and C share wire value 3 with A, so 3 does not identify B: removed plus added.
+    assert _kinds(diff_specs(old, new)) == ["strategy_added", "strategy_removed"]
+
+
+def test_unshared_wire_value_still_renames() -> None:
+    old = AlgoSpec(strategies=[Strategy(name="A", wire_value="3")])
+    new = AlgoSpec(strategies=[Strategy(name="C", wire_value="3")])
+    assert _kinds(diff_specs(old, new)) == ["strategy_renamed"]
+
+
+def test_shared_tag_does_not_cause_a_wrong_parameter_rename() -> None:
+    def spec(second: str) -> AlgoSpec:
+        return AlgoSpec(
+            strategies=[
+                Strategy(
+                    name="S",
+                    wire_value="1",
+                    parameters=[
+                        Parameter(name="A", type=ParamType.INT, fix_tag=7001),
+                        Parameter(name=second, type=ParamType.FLOAT, fix_tag=7001),
+                    ],
+                )
+            ]
+        )
+
+    # B renamed to C while A still shares tag 7001: the tag cannot say which is which.
+    kinds = _kinds(diff_specs(spec("B"), spec("C")))
+    assert "parameter_renamed" not in kinds
+    assert "parameter_removed" in kinds and "parameter_added" in kinds

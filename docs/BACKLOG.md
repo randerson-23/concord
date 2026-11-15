@@ -102,42 +102,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     are annotations; a synthetic `StartTime NX OR Urgency == H` becomes a forbidden rule with
     `!(Urgency == ^High)`. Validates against the v1.6 XSD (opt-in, checked locally). Follow-ups:
     a CLI `--strict` that fails when anything is unenforced; revisit when Orchestra 1.1 is final.
-20. `todo` **IR: allow a shared strategy wire value and a shared tag inside one strategy.**
-    The reader still rejects 3 of the 29 public samples. PM check 2026-11-15:
-    - atdl4j `Example Strategy Filtering.xml`: 18 strategies with unique names all
-      use `wireValue="3"`, told apart by `fixMsgType` (D/E) and region or market
-      filters. `Example StrategyPanel Tests2.xml` has two strategies on wire value
-      `4`.
-    - FixPortal `RealWorld/tz-clock.xml`, strategy `DYNAMIC_DARK`: `p_MinDarkType`
-      (String) and `p_LisFactor` (Float) both use `fixTag="7157"`, and
-      `flow:StateRule`s switch them on and off. Every other strategy in the file
-      has unique tags.
-    Identity rule, a D-entry that extends D9 without reversing it:
-    - A strategy's identity is its `name`, as D9 already says. Two strategies may
-      share a `wire_value`. Drop that uniqueness check.
-    - Parameter identity is `name`. Two parameters in one strategy may share a
-      `fix_tag`. Drop that check too, but keep the check that parameter names
-      are unique.
-    Do this:
-    - Diff: the D9 rename rules already need exactly one match (rename by wire
-      value, rename by tag). Add tests showing that a shared wire value or tag
-      gives removed/added, not a wrong rename.
-    - FIXatdl writer: write both parameters back unchanged, so the round trip is
-      equal.
-    - Orchestra writer: a shared wire value gives one code in the identifier code
-      set, with the scenarios still keyed by strategy name. Two types on one tag
-      in one strategy stays the 9a error, but the error names the strategy, the
-      tag and both parameters, and says Orchestra needs one type per field. Do not
-      guess a merged type. Add a backlog follow-up for representing it, for
-      example as a String field with an annotation.
-    - Site: when strategies share a wire value, the index shows "shared wire value"
-      next to each one. A strategy page lists shared-tag parameters together.
-    Acceptance: remove the three strict xfails. `CONCORD_PUBLIC_SAMPLES=1 uv run
-    pytest tests/test_public_samples.py` passes all 29. New unit tests cover a
-    shared wire value (diff gives removed/added, Orchestra gets one code), a
-    shared tag (FIXatdl round trip, Orchestra error text) and the two diff
-    rename guards. Why first: the shipped reader fails on 10% of real public
-    files, and the Orchestra and diff paths now depend on this identity rule.
+20. `done 2026-11-15` **IR: allow a shared strategy wire value and a shared tag inside one strategy.**
+    Done (decision D20): the IR drops both uniqueness checks (names stay unique); diff renames only
+    on an unshared wire value or tag; the Orchestra identifier code set has one code per distinct
+    wire value and a same-tag/different-type pair is an error naming both parameters; the site marks
+    shared wire values and lists shared-tag parameters. The three strict xfails are gone: all 28
+    public sample files pass (`CONCORD_PUBLIC_SAMPLES=1`). Tests: IR, FIXatdl round trip, two diff
+    guards, Orchestra (one code; error text), site. Follow-up: represent two types on one tag in
+    Orchestra (for example a String field with an annotation).
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.

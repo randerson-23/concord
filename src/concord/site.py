@@ -8,6 +8,7 @@ Stdlib only, one shared ``style.css``, no JS and no external assets, so the outp
 from __future__ import annotations
 
 import re
+from collections import Counter
 from html import escape
 from pathlib import Path
 
@@ -161,12 +162,18 @@ class _Renderer:
             )
         h.append("<h2>Strategies</h2><table><tr><th>Name</th><th>Label</th>")
         h.append("<th>Wire value</th><th>Parameters</th></tr>")
+        wire_counts = Counter(x.wire_value for x in spec.strategies)
         for s in spec.strategies:
             link = f"strategies/{self.slugs[s.name]}.html"
+            shared = (
+                ' <span class="badge">shared wire value</span>'
+                if wire_counts[s.wire_value] > 1
+                else ""
+            )
             h.append(
                 f'<tr><td><a href="{escape(link)}">{escape(s.name)}</a></td>'
                 f"<td>{escape(s.label or '')}</td>"
-                f"<td><code>{escape(s.wire_value)}</code></td>"
+                f"<td><code>{escape(s.wire_value)}</code>{shared}</td>"
                 f"<td>{len(s.parameters)}</td></tr>"
             )
         h.append("</table>")
@@ -211,6 +218,14 @@ class _Renderer:
         )
         if s.description:
             h.append(f"<p>{escape(s.description)}</p>")
+        by_tag: dict[int, list[str]] = {}
+        for p in s.parameters:
+            if p.fix_tag is not None:
+                by_tag.setdefault(p.fix_tag, []).append(p.name)
+        for tag, names in sorted(by_tag.items()):
+            if len(names) > 1:
+                listed = ", ".join(f"<code>{escape(n)}</code>" for n in names)
+                h.append(f"<p>Parameters sharing tag <code>{tag}</code>: {listed}</p>")
         fixed = [p.name for p in s.parameters if p.mutable_on_cxl_rpl is False]
         if fixed:
             names = ", ".join(f"<code>{escape(n)}</code>" for n in fixed)
