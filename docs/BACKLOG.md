@@ -102,14 +102,14 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     are annotations; a synthetic `StartTime NX OR Urgency == H` becomes a forbidden rule with
     `!(Urgency == ^High)`. Validates against the v1.6 XSD (opt-in, checked locally). Follow-ups:
     a CLI `--strict` that fails when anything is unenforced; revisit when Orchestra 1.1 is final.
-20. `todo` **IR: strategies that share a wire value or a fixTag.** Three public files
-    are rejected by IR uniqueness checks: atdl4j `Example Strategy Filtering.xml` and
-    `Example StrategyPanel Tests2.xml` (many strategies, same `wireValue`, distinguished by
-    region/`fixMsgType` filters) and FixPortal `tz-clock.xml` (two parameters on tag 7157, one
-    active per state rule). Decide the identity rule (wire value plus applicability? tag per
-    state?) and write it as a D-entry before relaxing the validators; that changes diff
-    matching (D9). Remove the strict xfails in `test_public_samples.py` when fixed.
-    Acceptance: all 29 samples pass with no xfail; diff tests still pass.
+20. `done 2026-11-15` **IR: allow a shared strategy wire value and a shared tag inside one strategy.**
+    Done (decision D20): the IR drops both uniqueness checks (names stay unique); diff renames only
+    on an unshared wire value or tag; the Orchestra identifier code set has one code per distinct
+    wire value and a same-tag/different-type pair is an error naming both parameters; the site marks
+    shared wire values and lists shared-tag parameters. The three strict xfails are gone: all 28
+    public sample files pass (`CONCORD_PUBLIC_SAMPLES=1`). Tests: IR, FIXatdl round trip, two diff
+    guards, Orchestra (one code; error text), site. Follow-up: represent two types on one tag in
+    Orchestra (for example a String field with an annotation).
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.

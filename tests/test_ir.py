@@ -31,22 +31,35 @@ def test_multiply_by_100_only_on_percentage():
         Parameter(name="X", type=ParamType.FLOAT, multiply_by_100=True)
 
 
-def test_duplicate_tags_within_strategy_rejected():
-    with pytest.raises(ValidationError, match="tag used twice"):
+def test_parameters_may_share_a_tag_but_not_a_name():
+    shared = Strategy(
+        name="S",
+        wire_value="1",
+        parameters=[
+            Parameter(name="A", type=ParamType.INT, fix_tag=7600),
+            Parameter(name="B", type=ParamType.FLOAT, fix_tag=7600),
+        ],
+    )
+    assert [p.fix_tag for p in shared.parameters] == [7600, 7600]
+    with pytest.raises(ValidationError, match="duplicate parameter names"):
         Strategy(
             name="S",
             wire_value="1",
             parameters=[
-                Parameter(name="A", type=ParamType.INT, fix_tag=7600),
-                Parameter(name="B", type=ParamType.INT, fix_tag=7600),
+                Parameter(name="A", type=ParamType.INT),
+                Parameter(name="A", type=ParamType.INT),
             ],
         )
 
 
-def test_duplicate_strategy_wire_values_rejected():
-    with pytest.raises(ValidationError, match="duplicate strategy wire values"):
+def test_strategies_may_share_a_wire_value_but_not_a_name():
+    spec = AlgoSpec(
+        strategies=[Strategy(name="A", wire_value="1"), Strategy(name="B", wire_value="1")]
+    )
+    assert [s.wire_value for s in spec.strategies] == ["1", "1"]
+    with pytest.raises(ValidationError, match="duplicate strategy names"):
         AlgoSpec(
-            strategies=[Strategy(name="A", wire_value="1"), Strategy(name="B", wire_value="1")]
+            strategies=[Strategy(name="A", wire_value="1"), Strategy(name="A", wire_value="2")]
         )
 
 

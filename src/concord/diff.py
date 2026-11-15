@@ -92,8 +92,8 @@ def diff_specs(old: AlgoSpec, new: AlgoSpec) -> DiffReport:
     new_s = {s.name: s for s in new.strategies}
     gone, fresh = old_s.keys() - new_s.keys(), new_s.keys() - old_s.keys()
     # A strategy that changed name but kept its wire value is the same strategy.
-    # Only an unambiguous pair counts: a wire value shared by several removed or
-    # several added strategies is not matched.
+    # Only an unambiguous pair counts: a wire value shared by several removed, several
+    # added or any other strategy (D20) is not matched.
     renamed_s: dict[str, str] = {}
     for rn in sorted(gone):
         wv = old_s[rn].wire_value
@@ -101,7 +101,10 @@ def diff_specs(old: AlgoSpec, new: AlgoSpec) -> DiffReport:
             continue
         gs = [g for g in gone if old_s[g].wire_value == wv]
         fs = [f for f in fresh if new_s[f].wire_value == wv]
-        if len(gs) == 1 and len(fs) == 1:
+        shared = sum(1 for x in old.strategies if x.wire_value == wv) > 1 or any(
+            x.wire_value == wv and x.name != fs[0] for x in new.strategies if fs
+        )
+        if len(gs) == 1 and len(fs) == 1 and not shared:
             renamed_s[rn] = fs[0]
     gone -= renamed_s.keys()
     fresh -= set(renamed_s.values())
@@ -198,7 +201,12 @@ def _diff_strategy(o: Strategy, n: Strategy, add, scalar, sname: str | None = No
         if tag is None:
             continue
         match = next((an for an in sorted(added) if new_p[an].fix_tag == tag), None)
-        if match:
+        # A tag shared by several parameters (D20) does not identify a parameter.
+        shared = (
+            sum(1 for x in o.parameters if x.fix_tag == tag) > 1
+            or sum(1 for x in n.parameters if x.fix_tag == tag) > 1
+        )
+        if match and not shared:
             renamed[rn] = match
             added.discard(match)
     for rn, an in sorted(renamed.items()):

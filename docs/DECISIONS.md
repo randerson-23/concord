@@ -194,3 +194,18 @@ strings, numbers; Score has no xor, so XOR is expanded; `FIX_X` is written as `X
 `mutable_on_cxl_rpl = False` gets a note on an `OrderCancelReplaceRequest` (msgType G, id 17)
 scenario for that strategy: it must equal the value in the order being replaced (Orchestra 1.0 has
 no "unchanged" rule).
+
+## D20 · 2026-11-15 · Identity: strategies and parameters are identified by name
+
+Extends D9 without reversing it. A strategy's identity is its `name`; a parameter's identity is its
+`name` within the strategy. Two strategies may share a `wire_value` (public files tell them apart
+by fixMsgType, region or market filters), and two parameters of one strategy may share a `fix_tag`
+(state rules switch between them). The IR no longer rejects either; duplicate names are still
+rejected. Consequences: diff matches a renamed strategy by wire value, or a renamed parameter by
+tag, only when that value is not shared by any other strategy or parameter on either side, so a
+shared value gives removed plus added, never a wrong rename; the FIXatdl writer writes both
+unchanged; the Orchestra identifier code set holds one code per distinct wire value (named after
+the first strategy) while scenarios stay keyed by strategy name; two parameters on one tag with
+different names or types is still an Orchestra error (one name and type per field) naming the
+strategy, tag and both parameters; the site marks a shared wire value and lists shared-tag
+parameters together. Note: the public sample count is 28 files, not the 29 reported on 2026-11-07.

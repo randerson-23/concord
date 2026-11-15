@@ -407,3 +407,40 @@ def test_rule_output_validates_against_the_schema(orchestra_schema) -> None:
         ],
     )
     assert orchestra_schema.validate(_doc(_with_edit(edit))), orchestra_schema.error_log
+
+
+# --------------------------------------------------------------------------- shared identity (D20)
+
+
+def test_strategies_sharing_a_wire_value_get_one_code_and_separate_scenarios() -> None:
+    spec = AlgoSpec(
+        strategies=[
+            Strategy(name="Day", wire_value="3"),
+            Strategy(name="Night", wire_value="3"),
+            Strategy(name="Other", wire_value="4"),
+        ]
+    )
+    out = _doc(spec)
+    assert _x(out, "//fixr:codeSet[@id='847']/fixr:code/@value") == ["3", "4"]
+    assert _x(out, "//fixr:message/@scenario") == ["Day", "Night", "Other"]
+    assert _x(out, "//fixr:message[@scenario='Night']//fixr:fieldRef/@value") == ["3"]
+
+
+def test_two_parameters_on_one_tag_in_one_strategy_are_an_error_naming_both() -> None:
+    spec = AlgoSpec(
+        strategies=[
+            Strategy(
+                name="DYNAMIC_DARK",
+                wire_value="1",
+                parameters=[
+                    Parameter(name="MinDarkType", type=ParamType.STRING, fix_tag=7157),
+                    Parameter(name="LisFactor", type=ParamType.FLOAT, fix_tag=7157),
+                ],
+            )
+        ]
+    )
+    with pytest.raises(
+        OrchestraError,
+        match=r"tag 7157.*DYNAMIC_DARK.*MinDarkType.*DYNAMIC_DARK.*LisFactor.*one name and type",
+    ):
+        write_orchestra(spec)

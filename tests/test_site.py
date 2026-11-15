@@ -247,3 +247,27 @@ def test_schema_lists_the_wire_contract_fields(capsys) -> None:
     out = capsys.readouterr().out
     for field in ("tag957_support", "change_strategy_on_cxl_rpl", "draft_flag_identifier_tag"):
         assert field in out
+
+
+def test_shared_wire_value_and_shared_tag_are_shown() -> None:
+    spec = AlgoSpec(
+        strategies=[
+            Strategy(
+                name="A",
+                wire_value="3",
+                parameters=[
+                    Parameter(name="One", type=ParamType.INT, fix_tag=7001),
+                    Parameter(name="Two", type=ParamType.FLOAT, fix_tag=7001),
+                ],
+            ),
+            Strategy(name="B", wire_value="3"),
+            Strategy(name="C", wire_value="4"),
+        ]
+    )
+    files = render_site(spec)
+    assert files["index.html"].count("shared wire value") == 2  # A and B, not C
+    assert (
+        "Parameters sharing tag <code>7001</code>: <code>One</code>, <code>Two</code>"
+        in (files["strategies/a.html"])
+    )
+    assert "Parameters sharing tag" not in files["strategies/b.html"]

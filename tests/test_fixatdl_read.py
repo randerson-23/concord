@@ -164,13 +164,19 @@ def test_duplicate_parameter_names_are_rejected():
         read_fixatdl(_MINIMAL % body)
 
 
-def test_duplicate_tags_name_the_strategy():
+def test_parameters_sharing_a_tag_round_trip():
+    from concord.fixatdl import write_fixatdl
+
     body = (
         b'<Parameter xsi:type="Int_t" name="A" fixTag="7001"/>'
-        b'<Parameter xsi:type="Int_t" name="B" fixTag="7001"/>'
+        b'<Parameter xsi:type="Float_t" name="B" fixTag="7001"/>'
     )
-    with pytest.raises(FixatdlError, match=r"Strategy\[@name='S'\].*tag used twice"):
-        read_fixatdl(_MINIMAL % body)
+    spec = read_fixatdl(_MINIMAL % body).spec
+    assert [(p.name, p.fix_tag) for p in spec.strategies[0].parameters] == [
+        ("A", 7001),
+        ("B", 7001),
+    ]
+    assert read_fixatdl(write_fixatdl(spec)).spec.model_dump() == spec.model_dump()
 
 
 def test_wrong_root_is_rejected():
