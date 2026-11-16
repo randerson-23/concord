@@ -110,6 +110,17 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     public sample files pass (`CONCORD_PUBLIC_SAMPLES=1`). Tests: IR, FIXatdl round trip, two diff
     guards, Orchestra (one code; error text), site. Follow-up: represent two types on one tag in
     Orchestra (for example a String field with an annotation).
+24. `done 2026-11-16` **Standard-tag check against the FIX dictionary (`concord lint`).** Done
+    (decision D21): `concord.fixdict` (streaming reader, FIX Latest loads in 0.2 s) and
+    `concord.lint`; `concord lint SPEC [--fix-version] [--dict-dir] [--format]` exits 2 on errors.
+    Unit tests use a synthetic dictionary written in the test (no download): each error and warning
+    kind and every `unionDataType` rule. An opt-in test (`CONCORD_PUBLIC_SAMPLES=1`) loads the real
+    Latest and 4.2 files, lints the fixture (clean) and the 27 readable public samples: 4 errors,
+    11 warnings. The four errors are real, all in FixPortal `regions-enums.xml`: `TimeInForce` (59),
+    `Side` (54) and `OrdType` (40) declared Int where FIX says char. Follow-ups: run lint inside
+    `concord extract` so findings reach the review list; let the Orchestra writer take names and types
+    for standard fields from the dictionary instead of re-declaring them; a lint finding for a
+    parameter that reuses a standard tag with a non-standard meaning.
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.

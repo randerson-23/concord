@@ -6,11 +6,13 @@
 
 ## Last run
 
-**2026-11-15 (daily firing) — shared identity.** Worker made strategies and parameters identified by
-name (D20): the IR accepts a shared strategy wire value and a shared tag in one strategy, which the
-public samples use. All 28 public sample files now pass (the three xfails are gone; earlier "29"
-was a miscount). Diff, Orchestra and the site handle the shared values. No new dependency. Before
-that: Orchestra rules (9c), messages (9b), fields and code sets (9a).
+**2026-11-16 (daily firing) — `concord lint`.** Worker added a FIX dictionary reader and
+`concord lint` (D21): standard tags 1-4999 are checked against the published FIX Latest, 4.4 or 4.2
+Orchestra dictionaries (not committed; fetched by pinned commit). On the 27 readable public samples:
+4 errors (all in `regions-enums.xml`, where `TimeInForce`, `Side` and `OrdType` are declared Int but
+FIX says char) and 11 warnings (mostly strategy wire values outside TargetStrategy's code set, plus
+renamed fields). The test fixture lints clean. No new dependency. Before that: identity by name (20),
+Orchestra rules (9c), messages (9b).
 
 ## Needs owner
 
@@ -33,6 +35,11 @@ PR or edit this file.
    `ANTHROPIC_API_KEY=proxy-injected`, because `extract.py` refuses to start without
    it. Make a dedicated Concord key with a monthly spend limit in the Anthropic
    Console first. Default is shared by all the owner's cloud sessions.
+7. **FIX dictionary files license (new 2026-11-16).** `FIXTradingCommunity/orchestrations` is
+   Apache-2.0, but `OrchestraFIXLatest.xml` itself says "Copyright (c) FIX Protocol Ltd. All Rights
+   Reserved." *Recommended:* **Fetch**, meaning we keep fetching it on demand and never commit or
+   ship it until a hosted product needs it, and decide then. *Blocks:* nothing today (backlog item 24
+   fetches on demand).
 6. **FIXatdl XSD license.** The official XSDs say use is "subject to the
    disclaimer" in the written spec. *Recommended:* keep them out of the repo
    (current approach — tests fetch them on demand) until you or a lawyer has

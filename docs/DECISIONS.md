@@ -209,3 +209,21 @@ the first strategy) while scenarios stay keyed by strategy name; two parameters 
 different names or types is still an Orchestra error (one name and type per field) naming the
 strategy, tag and both parameters; the site marks a shared wire value and lists shared-tag
 parameters together. Note: the public sample count is 28 files, not the 29 reported on 2026-11-07.
+
+## D21 · 2026-11-16 · Standard-tag lint against the FIX Orchestra dictionaries
+
+`concord.fixdict` reads only `fixr:fields` and `fixr:codeSets` of an Orchestra file (streamed with
+`iterparse`, hardened like the FIXatdl reader), and `concord lint SPEC [--fix-version 4.2|4.4|latest]
+[--dict-dir DIR] [--format text|json]` checks tags 1-4999 against it (5000 and above are user-defined
+and never findings). The dictionaries (FIX Latest EP312, 4.4, 4.2) come from
+`FIXTradingCommunity/orchestrations` at commit `cd24169a2abd8daba7c360987c7a46ca11873a12` and are NOT
+committed: the repo LICENSE says Apache-2.0 but each file's `dcterms:rights` says "Copyright (c) FIX
+Protocol Ltd. All Rights Reserved", the same ambiguity as D7. They are fetched into git-ignored
+`corpus/cache/fix-orchestra-dictionaries/` by the D15 method; `--dict-dir` or `CONCORD_FIX_DICT_DIR`
+points elsewhere, and a missing file says how to fetch it. Errors (exit 2): a standard-range tag
+defined in no dictionary; a type from a different family than the dictionary's (integers and decimals,
+and booleans and strings, count as compatible; two different time types is a warning); an enum value
+outside a standard code set that its `unionDataType` does not admit (Reserved100Plus, 1000Plus,
+4000Plus: integers at or above the number; Qty: any number; Tenor: `D5`-style). Warnings: a name that
+differs from the dictionary's; a tag in FIX Latest but not in the chosen version; a strategy wire
+value outside the identifier's code set. Findings carry the `Strategy/Parameter` location.
