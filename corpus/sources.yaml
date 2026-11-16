@@ -376,3 +376,21 @@ sources:
       PM 2026-11-12: the URL above (master, 8b61f49) is the 1.1 release candidate with namespace
       http://fixprotocol.io/2026/orchestra/repository. Orchestra 1.0 (namespace .../2020/...) is tag
       v1.6, commit 68ce876068aae1352b483ed8a41f1da3e3f9ea17 (2021-02-03), which is what 9a targets.
+  # Added 2026-11-16 by the PM. Read by git (pinned commit); not fetched into the repo.
+  - id: fix-orchestra-dictionaries
+    title: FIX Standard dictionaries as Orchestra XML (FIX Latest EP312, FIX 4.4, FIX 4.2)
+    publisher: FIX Trading Community
+    url: https://github.com/FIXTradingCommunity/orchestrations/tree/cd24169a2abd8daba7c360987c7a46ca11873a12/FIX%20Standard
+    kind: orchestra
+    found: 2026-11-16
+    terms: >-
+      Repo LICENSE is Apache License 2.0 (read 2026-11-16), but OrchestraFIXLatest.xml's own
+      dcterms:rights reads "Copyright (c) FIX Protocol Ltd. All Rights Reserved." Treat like the
+      FIXatdl XSDs (D7): fetch on demand into corpus/cache, never commit, until the owner confirms.
+    license: Apache-2.0
+    use: ok
+    notes: >-
+      OrchestraFIXLatest.xml 8.6 MB (6,203 fields, 694 code sets, namespace
+      http://fixprotocol.io/2020/orchestra/repository); OrchestraFIX44.xml 1.5 MB; OrchestraFIX42.xml
+      0.7 MB. 847 TargetStrategy = TargetStrategyCodeSet (1 VWAP, 2 Participate, 3 Minimize market
+      impact) with unionDataType Reserved1000Plus. Also Examples/NYSE Pillar (binary API demo, unmaintained).

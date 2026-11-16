@@ -33,6 +33,11 @@ PR or edit this file.
    `ANTHROPIC_API_KEY=proxy-injected`, because `extract.py` refuses to start without
    it. Make a dedicated Concord key with a monthly spend limit in the Anthropic
    Console first. Default is shared by all the owner's cloud sessions.
+7. **FIX dictionary files license (new 2026-11-16).** `FIXTradingCommunity/orchestrations` is
+   Apache-2.0, but `OrchestraFIXLatest.xml` itself says "Copyright (c) FIX Protocol Ltd. All Rights
+   Reserved." *Recommended:* **Fetch**, meaning we keep fetching it on demand and never commit or
+   ship it until a hosted product needs it, and decide then. *Blocks:* nothing today (backlog item 24
+   fetches on demand).
 6. **FIXatdl XSD license.** The official XSDs say use is "subject to the
    disclaimer" in the written spec. *Recommended:* keep them out of the repo
    (current approach — tests fetch them on demand) until you or a lawyer has
