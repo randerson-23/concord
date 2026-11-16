@@ -10,7 +10,9 @@ from pathlib import Path
 from concord.diff import diff_specs
 from concord.extract import AnthropicBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
+from concord.fixdict import dictionary_path, load_dictionary
 from concord.ir import AlgoSpec, SourceDocument
+from concord.lint import lint_spec
 from concord.orchestra import write_orchestra
 from concord.pdf import read_pdf
 from concord.site import write_site
@@ -91,6 +93,11 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("--out", required=True, help="where to write the IR JSON")
     x.add_argument("--review-out", help="where to write the review list (JSON)")
     x.add_argument("--replay", metavar="DIR", help="use recorded page-N.json responses, no API")
+    li = sub.add_parser("lint", help="check standard FIX tags against the FIX dictionary")
+    li.add_argument("spec")
+    li.add_argument("--fix-version", choices=["4.2", "4.4", "latest"], default="latest")
+    li.add_argument("--dict-dir", help="directory holding the Orchestra dictionary files")
+    li.add_argument("--format", choices=["text", "json"], default="text")
     st = sub.add_parser("site", help="render a spec as a static HTML site")
     st.add_argument("spec")
     st.add_argument("out_dir")
@@ -130,6 +137,19 @@ def main(argv: list[str] | None = None) -> int:
                 )
             print(res.review_text())
             if res.review:
+                return 2
+        elif args.cmd == "lint":
+            version = args.fix_version
+            wanted = load_dictionary(dictionary_path(version, args.dict_dir))
+            latest = None
+            if version != "latest":
+                latest = load_dictionary(dictionary_path("latest", args.dict_dir))
+            findings = lint_spec(_load(args.spec), wanted, latest)
+            if args.format == "json":
+                print(json.dumps([f.to_dict() for f in findings], indent=2))
+            else:
+                print("\n".join(f.to_text() for f in findings) or "no findings")
+            if any(f.severity == "error" for f in findings):
                 return 2
         elif args.cmd == "site":
             old = _load(args.diff) if args.diff else None

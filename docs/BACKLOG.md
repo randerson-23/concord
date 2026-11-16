@@ -110,57 +110,17 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     public sample files pass (`CONCORD_PUBLIC_SAMPLES=1`). Tests: IR, FIXatdl round trip, two diff
     guards, Orchestra (one code; error text), site. Follow-up: represent two types on one tag in
     Orchestra (for example a String field with an annotation).
-24. `todo` **Standard-tag check against the FIX dictionary (`concord lint`).** Found 2026-11-16:
-    the FIX Trading Community publishes the whole FIX dictionary as Orchestra XML
-    in `FIXTradingCommunity/orchestrations` (corpus id `fix-orchestra-dictionaries`):
-    - `FIX Standard/OrchestraFIXLatest.xml`: 8.6 MB, EP312, 6,203 fields,
-      694 code sets, 2020 namespace. This is the namespace D17 already writes.
-    - `OrchestraFIX44.xml` (1.5 MB) and `OrchestraFIX42.xml` (0.7 MB): most
-      broker specs are FIX 4.2 or 4.4.
-    Brokers' specs get standard tags wrong, and our extraction will repeat
-    those errors. Even the FIXatdl 1.2 RC text cites ExpireTime(128), but
-    ExpireTime is 126. In FIX Latest, 847 TargetStrategy is a code set with
-    `unionDataType="Reserved1000Plus"`. So Coinbase's letter codes (`T`/`V`) are
-    off-standard, while Saxo's `1014` is legal. 847/848/849 do not exist in FIX 4.2
-    at all, yet many FIX 4.2 specs use them. A deterministic check is worth
-    more for accuracy than any prompt tuning, and it needs no API key.
-    Do this:
-    - `concord.fixdict`: a minimal Orchestra reader for `fixr:fields` and
-      `fixr:codeSets` only. It returns `{tag: (name, type, codeset values,
-      unionDataType)}`. It is XXE-safe like the FIXatdl reader, and streams with
-      `iterparse` because the file is 8.6 MB. This is the first slice of the
-      architecture's "Orchestra read".
-    - Fetch the dictionaries on demand into `corpus/cache/fix-orchestra-dictionaries/`
-      with the D15 pinned-commit method, at commit `cd24169a2abd8daba7c360987c7a46ca11873a12`
-      (2026-09-08). **Do not commit them.** The repo LICENSE says Apache-2.0, but
-      the file's own `dcterms:rights` says "Copyright (c) FIX Protocol Ltd. All
-      Rights Reserved", the same ambiguity D7 handled. Record that in the D-entry.
-    - `concord lint SPEC [--fix-version 4.2|4.4|latest]` (default `latest`) reports
-      one finding per line, naming the location. Exit 2 on any error, 0 if there
-      are only warnings.
-      - *error*: a tag in the standard range (1–4999) that the dictionary does
-        not define; a type that conflicts with the dictionary's type (for
-        example Int against UTCTimestamp; define a small compatibility table);
-        an enum value outside a standard code set whose `unionDataType` does not
-        allow it (Reserved100Plus, Reserved1000Plus and so on).
-      - *warning*: a name that differs from the dictionary name (brokers
-        rename fields, so show both); a tag that exists in Latest but not in the
-        chosen `--fix-version` (the 847-in-4.2 case); the strategy identifier tag
-        using values outside its code set.
-      - User-defined ranges (5000–9999 and 20000–39999 in FIX 4.x, 10000+ in
-        Latest) are never errors.
-    - Tests: unit tests use a tiny synthetic Orchestra dictionary written in the
-      test, so CI needs no download. One opt-in test (`CONCORD_PUBLIC_SAMPLES=1`)
-      lints `example_broker.xml` and the public FIXatdl samples against the real
-      Latest file. Report the counts in STATUS, without failing on what the
-      samples contain.
-    Acceptance: unit tests for each error and warning kind and for each
-    `unionDataType` rule. `concord lint` exits 0 on the fixture with warnings
-    only, or fix the fixture if it has a real error, keeping its synthetic
-    header. The opt-in real-dictionary test passes. No new dependency (lxml is
-    already there). Follow-ups: run lint inside `concord extract` so findings
-    reach the review list; let the Orchestra writer use dictionary names and
-    types for standard fields instead of re-declaring them.
+24. `done 2026-11-16` **Standard-tag check against the FIX dictionary (`concord lint`).** Done
+    (decision D21): `concord.fixdict` (streaming reader, FIX Latest loads in 0.2 s) and
+    `concord.lint`; `concord lint SPEC [--fix-version] [--dict-dir] [--format]` exits 2 on errors.
+    Unit tests use a synthetic dictionary written in the test (no download): each error and warning
+    kind and every `unionDataType` rule. An opt-in test (`CONCORD_PUBLIC_SAMPLES=1`) loads the real
+    Latest and 4.2 files, lints the fixture (clean) and the 27 readable public samples: 4 errors,
+    11 warnings. The four errors are real, all in FixPortal `regions-enums.xml`: `TimeInForce` (59),
+    `Side` (54) and `OrdType` (40) declared Int where FIX says char. Follow-ups: run lint inside
+    `concord extract` so findings reach the review list; let the Orchestra writer take names and types
+    for standard fields from the dictionary instead of re-declaring them; a lint finding for a
+    parameter that reuses a standard tag with a non-standard meaning.
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.
