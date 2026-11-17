@@ -28,6 +28,11 @@ PR or edit this file.
 4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
    spend on live extraction (budget roughly $10–25 per spec converted).
    *Blocks:* backlog item 5 live runs only — everything else proceeds.
+   *Update 2026-11-17:* this is now the main blocker. The business plan's Engine phase (§10.1)
+   is done apart from live extraction, and the next phase, Corpus (§10.2: convert 30–50 public
+   specs), cannot start without it. Items 25a–c build the pipeline so that a key turns straight
+   into converted specs, and `concord corpus plan` will show the estimated token cost first.
+   *Recommended one-word answer:* **Go**, once a dedicated key with a spend limit exists.
    *How (agreed 2026-11-07, deferred by owner for now):* when the owner says **Go**,
    a session opens the secure network-secret form for `api.anthropic.com` (header
    `x-api-key`, no prefix). The key is stored on the Default environment and never

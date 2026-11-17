@@ -121,6 +121,58 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `concord extract` so findings reach the review list; let the Orchestra writer take names and types
     for standard fields from the dictionary instead of re-declaring them; a lint finding for a
     parameter that reuses a standard tag with a non-standard meaning.
+25a. `todo` **Corpus pipeline, part 1: `concord corpus fetch` and `concord corpus plan`.**
+    Why now (PM 2026-11-17): the business plan's Engine phase (§10.1) is done apart
+    from live extraction. The next phase is **Corpus**: convert 30–50 public broker
+    specs and publish the library (§10.2). Only the owner's API key (STATUS 4)
+    blocks live runs, so build everything around it now. Then the day the key
+    lands, one command converts the corpus, and the owner sees the cost first.
+    Do this:
+    - `concord corpus fetch [ID ...]` reads `corpus/sources.yaml` and fetches only
+      entries with `use: ok` and kind `pdf` or `html` (14 today: 7 PDF, 7 HTML)
+      into `corpus/cache/<id>/`, making one request per source per run. It reuses
+      the cache if it exists. Check the response: PDFs must start with `%PDF`.
+      HTML must not look like a bot-challenge page (e.g. a `<title>` containing
+      "Attention Required" or "Just a moment"). On a failed check, report the
+      source as `blocked` and move on, with no retry and no header tricks; this
+      is the NYSE/CQG lesson. Record `fetched_at` and a sha256 in
+      `corpus/cache/<id>/meta.json`. Never write into the repo outside
+      `corpus/cache/`.
+    - `concord corpus plan` prints one row per cached source: pages (PDF) or
+      sections (HTML, see 25b; until then the character count), characters, and
+      estimated input tokens (chars ÷ 4, stated as an estimate), then a total.
+      Cost appears only with `--price-per-mtok X`. Do not hardcode a model price,
+      because it goes stale.
+    - Use `urllib` from the stdlib, so no new dependency, plus the environment's
+      CA bundle via the standard env vars. Keep the network behind one function
+      so tests can monkeypatch it.
+    Acceptance: unit tests with a monkeypatched fetcher cover a PDF ok, a PDF that
+    is really an HTML challenge (`blocked`), an HTML ok, a skipped `restricted`
+    entry, cache reuse with no second call, and `meta.json` contents. `plan` is
+    tested on a synthetic PDF generated in the test. CI makes no network calls.
+    Run `concord corpus fetch` once for real and paste the summary (ok, blocked,
+    pages) into STATUS.
+25b. `todo` **HTML text layer for HTML sources.** `concord.html.read_html(path) ->
+    list[Page]` turns an HTML spec into pages, one per `h1`/`h2` section, with the
+    section heading as the page's `locator` (the `Citation.locator` field already
+    exists). It keeps tables as layout text, so `extract_tables` (item 21) works
+    on them. It is stdlib `html.parser` only, with no scripts, no network and
+    bounded depth (the untrusted-input rule). The verifier and extractor must
+    accept these pages. A citation's `page` is the section index and its
+    `locator` the heading. Acceptance: tests on a synthetic HTML page with two
+    sections and a field table: section count, table rows, and a verify pass
+    and fail on a quote. The opt-in test reads the cached Saxo page
+    (`saxo-algo-order-fix-tags`) and finds tag 847 in a table.
+25c. `todo` **Corpus pipeline, part 2: `concord corpus convert ID`.** One command
+    runs extract (PDF or HTML, `--replay DIR` or live), then verify, then lint
+    (item 24). The review list gets lint errors as well as unverified facts. It
+    writes `corpus/out/<id>/` with `spec.json`, `strategies.xml`
+    (FIXatdl), `orchestra.xml`, `site/` and `review.json`. Exit 2 if the review
+    list is not empty. Acceptance: a replay test end to end on a synthetic PDF
+    with recorded responses writes all five outputs, a lint error lands in
+    `review.json`, and the output is byte-identical across two runs. Live use
+    stays blocked on STATUS 4. Add `corpus/out/` to `.gitignore`, which does not
+    cover it today (hard rule 2: the output is derived from third-party documents).
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.
