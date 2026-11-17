@@ -7,12 +7,15 @@ cite ``(source_id, page, quote)``. Uses ``pypdf`` (BSD-3-Clause); never PyMuPDF
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from pypdf import PdfReader
 from pypdf.errors import PyPdfError
+
+logging.getLogger("pypdf").setLevel(logging.ERROR)  # rotated-text notices are noise here
 
 _CELL = re.compile(r"\S+(?: \S+)*")  # words separated by one space; 2+ spaces split cells
 _START_TOL = 6  # columns of slack when matching a cell to a column (centred/right-aligned text)

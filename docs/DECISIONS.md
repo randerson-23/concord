@@ -227,3 +227,18 @@ outside a standard code set that its `unionDataType` does not admit (Reserved100
 4000Plus: integers at or above the number; Qty: any number; Tenor: `D5`-style). Warnings: a name that
 differs from the dictionary's; a tag in FIX Latest but not in the chosen version; a strategy wire
 value outside the identifier's code set. Findings carry the `Strategy/Parameter` location.
+
+## D22 · 2026-11-17 · Corpus pipeline: fetch eligible sources once, plan before spending
+
+`concord corpus fetch [ID ...]` downloads only `corpus/sources.yaml` entries with `use: ok` and
+kind `pdf` or `html` into the git-ignored `corpus/cache/<id>/` (`doc.pdf` or `doc.html` plus
+`meta.json` with url, kind, `fetched_at`, `sha256`, bytes). One request per source per run, with the
+stdlib `urllib` and a plain `concord-corpus-fetch/0.1` user agent: no retry and no header tricks.
+A non-200 response, an empty body, a PDF that does not start with `%PDF`, or an HTML page whose
+`<title>` is a bot challenge ("Just a moment", "Attention Required", "Access Denied" and similar) is
+reported as `blocked` and skipped. An existing cached document is reused with no request (and gets a
+`meta.json` if it predates it). `concord corpus plan [--price-per-mtok X] [ID ...]` lists pages
+(PDF) or text length (HTML), characters and estimated input tokens (characters / 4, stated as an
+estimate); cost is shown only when a price is given, because a hardcoded model price goes stale.
+The network is one function, `concord.corpus.http_get`, which tests replace, so CI makes no
+requests. New dependency: PyYAML 6.0.3 (MIT) to read `sources.yaml`.

@@ -5,8 +5,17 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
+from concord.corpus import (
+    DEFAULT_CACHE,
+    DEFAULT_SOURCES,
+    fetch_sources,
+    load_sources,
+    plan_sources,
+    plan_text,
+)
 from concord.diff import diff_specs
 from concord.extract import AnthropicBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
@@ -93,6 +102,18 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("--out", required=True, help="where to write the IR JSON")
     x.add_argument("--review-out", help="where to write the review list (JSON)")
     x.add_argument("--replay", metavar="DIR", help="use recorded page-N.json responses, no API")
+    co = sub.add_parser("corpus", help="fetch the public sources and plan extraction")
+    cosub = co.add_subparsers(dest="corpus_cmd", required=True)
+    for name, text in (
+        ("fetch", "download eligible sources into the cache"),
+        ("plan", "size them"),
+    ):
+        cp = cosub.add_parser(name, help=text)
+        cp.add_argument("ids", nargs="*", help="source ids (default: all)")
+        cp.add_argument("--sources", default=str(DEFAULT_SOURCES))
+        cp.add_argument("--cache-dir", default=str(DEFAULT_CACHE))
+        if name == "plan":
+            cp.add_argument("--price-per-mtok", type=float, help="price per million input tokens")
     li = sub.add_parser("lint", help="check standard FIX tags against the FIX dictionary")
     li.add_argument("spec")
     li.add_argument("--fix-version", choices=["4.2", "4.4", "latest"], default="latest")
@@ -138,6 +159,16 @@ def main(argv: list[str] | None = None) -> int:
             print(res.review_text())
             if res.review:
                 return 2
+        elif args.cmd == "corpus":
+            sources = load_sources(args.sources)
+            if args.corpus_cmd == "fetch":
+                results = fetch_sources(sources, args.cache_dir, args.ids)
+                print("\n".join(r.to_text() for r in results))
+                tally = Counter(r.status for r in results)
+                print(", ".join(f"{n} {k}" for k, n in sorted(tally.items())))
+            else:
+                rows = plan_sources(sources, args.cache_dir, args.ids)
+                print(plan_text(rows, args.price_per_mtok))
         elif args.cmd == "lint":
             version = args.fix_version
             wanted = load_dictionary(dictionary_path(version, args.dict_dir))

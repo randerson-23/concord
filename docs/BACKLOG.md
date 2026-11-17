@@ -121,6 +121,38 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `concord extract` so findings reach the review list; let the Orchestra writer take names and types
     for standard fields from the dictionary instead of re-declaring them; a lint finding for a
     parameter that reuses a standard tag with a non-standard meaning.
+25a. `done 2026-11-17` **Corpus pipeline, part 1: `concord corpus fetch` and `concord corpus plan`.**
+    Done (decision D22). `fetch` takes only `use: ok` pdf/html entries, checks each response
+    (`%PDF`, bot-challenge titles, HTTP status), writes `meta.json`, reuses the cache, and never
+    retries. `plan` sizes the cache and estimates tokens; cost only with `--price-per-mtok`. Tests
+    replace the network (`concord.corpus.http_get`): PDF ok, a PDF that is really a challenge
+    page, HTML ok, challenge and 403, restricted/unreachable/unset-use and non-pdf/html entries
+    skipped with no request, cache reuse, `meta.json`, plan on a synthetic PDF and HTML, the CLI.
+    Real run 2026-11-17: all 14 eligible sources are in the cache (7 PDF, 7 HTML); a fresh fetch
+    of three of them into a scratch directory succeeded (NYSE's PDF came back as a real PDF today),
+    and `plan` estimated about 285,000 input tokens for the 14 (1.14 M characters, 311 PDF pages).
+    New dependency: PyYAML (MIT). Follow-ups: 25b and 25c below.
+25b. `todo` **HTML text layer for HTML sources.** `concord.html.read_html(path) ->
+    list[Page]` turns an HTML spec into pages, one per `h1`/`h2` section, with the
+    section heading as the page's `locator` (the `Citation.locator` field already
+    exists). It keeps tables as layout text, so `extract_tables` (item 21) works
+    on them. It is stdlib `html.parser` only, with no scripts, no network and
+    bounded depth (the untrusted-input rule). The verifier and extractor must
+    accept these pages. A citation's `page` is the section index and its
+    `locator` the heading. Acceptance: tests on a synthetic HTML page with two
+    sections and a field table: section count, table rows, and a verify pass
+    and fail on a quote. The opt-in test reads the cached Saxo page
+    (`saxo-algo-order-fix-tags`) and finds tag 847 in a table.
+25c. `todo` **Corpus pipeline, part 2: `concord corpus convert ID`.** One command
+    runs extract (PDF or HTML, `--replay DIR` or live), then verify, then lint
+    (item 24). The review list gets lint errors as well as unverified facts. It
+    writes `corpus/out/<id>/` with `spec.json`, `strategies.xml`
+    (FIXatdl), `orchestra.xml`, `site/` and `review.json`. Exit 2 if the review
+    list is not empty. Acceptance: a replay test end to end on a synthetic PDF
+    with recorded responses writes all five outputs, a lint error lands in
+    `review.json`, and the output is byte-identical across two runs. Live use
+    stays blocked on STATUS 4. Add `corpus/out/` to `.gitignore`, which does not
+    cover it today (hard rule 2: the output is derived from third-party documents).
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.
