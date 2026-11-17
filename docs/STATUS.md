@@ -32,6 +32,17 @@ PR or edit this file.
    specs), cannot start without it. Items 25a–c build the pipeline so that a key turns straight
    into converted specs, and `concord corpus plan` will show the estimated token cost first.
    *Recommended one-word answer:* **Go**, once a dedicated key with a spend limit exists.
+   *How (corrected 2026-11-17):* the secure network-secret form refuses Anthropic's own API host,
+   and a request sent with no key gets `401 x-api-key header is required`. So the owner adds
+   `ANTHROPIC_API_KEY` as an **environment variable** on the Default environment (title bar →
+   environment → Edit → Environment variables), and the next session start picks it up. It is
+   stored as plain text and every cloud session on Default can see it, so use a dedicated
+   Concord key with a monthly spend limit. Sessions never set or see the value themselves.
+   *Update 2026-11-17:* this is now the main blocker. The business plan's Engine phase (§10.1)
+   is done apart from live extraction, and the next phase, Corpus (§10.2: convert 30–50 public
+   specs), cannot start without it. Items 25a–c build the pipeline so that a key turns straight
+   into converted specs, and `concord corpus plan` will show the estimated token cost first.
+   *Recommended one-word answer:* **Go**, once a dedicated key with a spend limit exists.
    *How (agreed 2026-11-07, deferred by owner for now):* when the owner says **Go**,
    a session opens the secure network-secret form for `api.anthropic.com` (header
    `x-api-key`, no prefix). The key is stored on the Default environment and never
