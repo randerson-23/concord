@@ -24,37 +24,9 @@ PR or edit this file.
    outside-business clause, and non-compete terms. *Recommended:* read it this
    month; if anything is ambiguous, an hour with an employment lawyer is cheap
    insurance. *Blocks:* public launch, first customer conversations.
-4. **Add `ANTHROPIC_API_KEY` as an environment secret** when you're ready to
-   spend on live extraction (budget roughly $10–25 per spec converted).
-   *Blocks:* backlog item 5 live runs only — everything else proceeds.
-   *Update 2026-11-17:* this is now the main blocker. The business plan's Engine phase (§10.1)
-   is done apart from live extraction, and the next phase, Corpus (§10.2: convert 30–50 public
-   specs), cannot start without it. Items 25a–c build the pipeline so that a key turns straight
-   into converted specs, and `concord corpus plan` will show the estimated token cost first.
-   *Recommended one-word answer:* **Go**, once a dedicated key with a spend limit exists.
-   *How (corrected 2026-11-17):* the secure network-secret form refuses Anthropic's own API host,
-   and a request sent with no key gets `401 x-api-key header is required`. So the owner adds
-   `ANTHROPIC_API_KEY` as an **environment variable** on the Default environment (title bar →
-   environment → Edit → Environment variables), and the next session start picks it up. It is
-   stored as plain text and every cloud session on Default can see it, so use a dedicated
-   Concord key with a monthly spend limit. Sessions never set or see the value themselves.
-   *Update 2026-11-17:* this is now the main blocker. The business plan's Engine phase (§10.1)
-   is done apart from live extraction, and the next phase, Corpus (§10.2: convert 30–50 public
-   specs), cannot start without it. Items 25a–c build the pipeline so that a key turns straight
-   into converted specs, and `concord corpus plan` will show the estimated token cost first.
-   *Recommended one-word answer:* **Go**, once a dedicated key with a spend limit exists.
-   *How (agreed 2026-11-07, deferred by owner for now):* when the owner says **Go**,
-   a session opens the secure network-secret form for `api.anthropic.com` (header
-   `x-api-key`, no prefix). The key is stored on the Default environment and never
-   in the repo or chat. The session also sets the non-secret placeholder
-   `ANTHROPIC_API_KEY=proxy-injected`, because `extract.py` refuses to start without
-   it. Make a dedicated Concord key with a monthly spend limit in the Anthropic
-   Console first. Default is shared by all the owner's cloud sessions.
-7. **FIX dictionary files license (new 2026-11-16).** `FIXTradingCommunity/orchestrations` is
-   Apache-2.0, but `OrchestraFIXLatest.xml` itself says "Copyright (c) FIX Protocol Ltd. All Rights
-   Reserved." *Recommended:* **Fetch**, meaning we keep fetching it on demand and never commit or
-   ship it until a hosted product needs it, and decide then. *Blocks:* nothing today (backlog item 24
-   fetches on demand).
+4. ~~Add `ANTHROPIC_API_KEY`.~~ *Resolved 2026-11-17:* the owner said **Go** and added it as an
+   environment variable on Default (confirmed by name; sessions never see the value). The first live
+   run is backlog item 26, capped at 150k input tokens.
 6. **FIXatdl XSD license.** The official XSDs say use is "subject to the
    disclaimer" in the written spec. *Recommended:* keep them out of the repo
    (current approach — tests fetch them on demand) until you or a lawyer has

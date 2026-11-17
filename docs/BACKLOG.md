@@ -132,6 +132,39 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     of three of them into a scratch directory succeeded (NYSE's PDF came back as a real PDF today),
     and `plan` estimated about 285,000 input tokens for the 14 (1.14 M characters, 311 PDF pages).
     New dependency: PyYAML (MIT). Follow-ups: 25b and 25c below.
+26. `todo` **First live extraction on one real spec, with usage accounting.** Unblocked
+    2026-11-17: the owner said **Go**, and `ANTHROPIC_API_KEY` is on the Default environment
+    (a variable, picked up when the session starts or resumes). If it is absent
+    in your session, stop and say so under *Needs owner*. Do not work around it.
+    Do this:
+    - Usage accounting first (item 5 follow-up). `AnthropicBackend` records
+      `usage.input_tokens` / `output_tokens` from every response, including cache
+      tokens if present. `concord extract` prints per-page and total tokens to
+      stderr and writes them to `<out>.usage.json`. Add `--max-input-tokens N`,
+      default 150000: stop before the call that would exceed it, and keep what
+      was extracted so far. Do not hardcode a price. Look up the current model
+      price with the `claude-api` skill and put it in the STATUS report, not in
+      code.
+    - Then one live run on `nyse-pillar-to-algo-fix` (`use: ok`, already cached
+      by 25a, a short PDF that carries wire tags: TargetStrategy 20046,
+      EffectiveTime 168, ExpireTime 126, MaxParticipationRate 20050). If it is
+      missing from the cache, use `nyse-pillar-gateway-fix` or
+      `commanderfx-rules-of-engagement`, and say which you used. Run
+      `concord extract` and then `concord lint` on the result.
+    - Write all outputs, including the raw recorded responses, to
+      `corpus/cache/<id>/run-2026-11-18/`. They contain quotes from a
+      third-party document, so **never commit them** (hard rule 2). Commit only
+      code, tests and the STATUS summary.
+    - STATUS reports: pages, tokens in and out, the estimated cost, verified
+      facts, the review-list count with its top 3 reasons, the lint
+      findings, and your honest read of where extraction went wrong. The PM
+      uses that to plan prompt work. Keep the summary to what Concord found,
+      not copied text from the PDF.
+    Acceptance: unit tests (replay, no key) for usage capture, the token cap
+    stopping early, and `usage.json`. One live run completed with the summary in
+    STATUS. Checks green. Why first: we have never measured extraction on a real
+    document, and every later item (25c, the corpus phase, prompt tuning) depends
+    on what this shows.
 25b. `todo` **HTML text layer for HTML sources.** `concord.html.read_html(path) ->
     list[Page]` turns an HTML spec into pages, one per `h1`/`h2` section, with the
     section heading as the page's `locator` (the `Citation.locator` field already
