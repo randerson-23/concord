@@ -6,12 +6,12 @@
 
 ## Last run
 
-**2026-11-17 (daily firing) — corpus fetch and plan.** Worker added `concord corpus fetch` and
-`concord corpus plan` (D22). `fetch` takes only `use: ok` PDF and HTML sources, checks each response
-(a bot-challenge page or non-PDF is `blocked`, never retried) and records a sha256. Real run: all 14
-eligible sources are cached (7 PDF, 7 HTML, 311 PDF pages) and `plan` estimates about 285,000 input
-tokens for them (characters / 4); cost needs `--price-per-mtok`. New dependency: PyYAML 6.0.3 (MIT).
-Before that: `concord lint` (24), identity by name (20), Orchestra rules (9c).
+**2026-11-18 (daily firing) — extraction usage accounting.** Worker built the first half of backlog
+item 26 (D23): token usage is captured per page (input, output, cache), `concord extract` prints it
+to stderr and writes `<out>.usage.json`, `--max-input-tokens` (default 150000) stops before the call
+that would exceed it and keeps what was extracted, and `--record DIR` saves raw responses for replay.
+The live run (26b) did not happen: `ANTHROPIC_API_KEY` is not set in this session (see Needs owner 8).
+No new dependency. Before that: corpus fetch and plan (25a), `concord lint` (24).
 
 ## Needs owner
 
@@ -27,6 +27,12 @@ PR or edit this file.
 4. ~~Add `ANTHROPIC_API_KEY`.~~ *Resolved 2026-11-17:* the owner said **Go** and added it as an
    environment variable on Default (confirmed by name; sessions never see the value). The first live
    run is backlog item 26, capped at 150k input tokens.
+8. **`ANTHROPIC_API_KEY` is not visible in the Worker session (2026-11-18).** The Default
+   environment variable reaches a session only when it starts or resumes, and this long-lived Worker
+   session predates it, so the first live extraction (backlog 26b) cannot run. *Recommended
+   one-word answer:* **Restart**: resume or restart the "Concord Worker" session (a fresh container
+   picks the variable up), and the next firing runs 26b. Nothing else is blocked. If you would
+   rather not restart, say **Skip** and the Worker moves on to items 25b and 25c.
 6. **FIXatdl XSD license.** The official XSDs say use is "subject to the
    disclaimer" in the written spec. *Recommended:* keep them out of the repo
    (current approach — tests fetch them on demand) until you or a lawyer has

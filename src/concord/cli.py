@@ -17,7 +17,7 @@ from concord.corpus import (
     plan_text,
 )
 from concord.diff import diff_specs
-from concord.extract import AnthropicBackend, ReplayBackend, extract_spec
+from concord.extract import AnthropicBackend, RecordingBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
 from concord.fixdict import dictionary_path, load_dictionary
 from concord.ir import AlgoSpec, SourceDocument
@@ -102,6 +102,13 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("--out", required=True, help="where to write the IR JSON")
     x.add_argument("--review-out", help="where to write the review list (JSON)")
     x.add_argument("--replay", metavar="DIR", help="use recorded page-N.json responses, no API")
+    x.add_argument("--record", metavar="DIR", help="save raw responses and usage (live runs)")
+    x.add_argument(
+        "--max-input-tokens",
+        type=int,
+        default=150_000,
+        help="stop before the call that would exceed this many input tokens (default 150000)",
+    )
     co = sub.add_parser("corpus", help="fetch the public sources and plan extraction")
     cosub = co.add_subparsers(dest="corpus_cmd", required=True)
     for name, text in (
@@ -149,9 +156,21 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
         elif args.cmd == "extract":
             backend = ReplayBackend(args.replay) if args.replay else AnthropicBackend()
+            if args.record:
+                backend = RecordingBackend(backend, args.record)
             src = SourceDocument(id=args.id, title=args.title, kind="pdf", url=args.url)
-            res = extract_spec(read_pdf(args.pdf), src, backend, provider=args.provider)
+            res = extract_spec(
+                read_pdf(args.pdf),
+                src,
+                backend,
+                provider=args.provider,
+                max_input_tokens=args.max_input_tokens,
+            )
             Path(args.out).write_text(res.spec.model_dump_json(indent=2, exclude_none=True))
+            Path(f"{args.out}.usage.json").write_text(
+                json.dumps(res.usage_dict(args.max_input_tokens), indent=2) + "\n"
+            )
+            print(res.usage_text(), file=sys.stderr)
             if args.review_out:
                 Path(args.review_out).write_text(
                     json.dumps([r.to_dict() for r in res.review], indent=2)
