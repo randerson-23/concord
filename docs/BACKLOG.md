@@ -132,6 +132,22 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     of three of them into a scratch directory succeeded (NYSE's PDF came back as a real PDF today),
     and `plan` estimated about 285,000 input tokens for the 14 (1.14 M characters, 311 PDF pages).
     New dependency: PyYAML (MIT). Follow-ups: 25b and 25c below.
+26a. `done 2026-11-18` **Usage accounting and the input-token cap (first half of item 26).** Done
+    (decision D23): `Usage` capture in `AnthropicBackend`, `ReplayBackend` (`page-N.usage.json`) and
+    an estimate fallback; `--max-input-tokens` (default 150000) stopping before the call that would
+    exceed it, keeping extracted facts and adding a `token_cap` review item; per-page and total
+    tokens on stderr and in `<out>.usage.json`; `--record DIR` for raw responses. Tests (replay, no
+    key): usage capture, estimate fallback, `usage_from_response`, the cap stopping early (and
+    before page 1), no cap, recording round trip, the CLI.
+26b. `blocked: ANTHROPIC_API_KEY is not visible in the Worker session (STATUS Needs owner 8)` **First
+    live extraction on one real spec** (second half of item 26, unchanged). The Worker session's
+    container predates the key, and a Default-environment variable only reaches a session that starts
+    or resumes. Run it on `nyse-pillar-to-algo-fix` (`concord corpus fetch nyse-pillar-to-algo-fix`
+    first, then `concord extract ... --record corpus/cache/<id>/run-<date>/responses --out
+    corpus/cache/<id>/run-<date>/spec.json`, then `concord lint`), never commit the outputs
+    (hard rule 2), and report pages, tokens, estimated cost (current price via the `claude-api`
+    skill), verified facts, the review list's top 3 reasons, the lint findings and where extraction
+    went wrong.
 25b. `todo` **HTML text layer for HTML sources.** `concord.html.read_html(path) ->
     list[Page]` turns an HTML spec into pages, one per `h1`/`h2` section, with the
     section heading as the page's `locator` (the `Citation.locator` field already

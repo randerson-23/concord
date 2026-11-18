@@ -242,3 +242,17 @@ reported as `blocked` and skipped. An existing cached document is reused with no
 estimate); cost is shown only when a price is given, because a hardcoded model price goes stale.
 The network is one function, `concord.corpus.http_get`, which tests replace, so CI makes no
 requests. New dependency: PyYAML 6.0.3 (MIT) to read `sources.yaml`.
+
+## D23 · 2026-11-18 · Extraction usage accounting and the input-token cap
+
+Backends may expose `last_usage` (`Usage`: input, output, cache creation and cache read tokens).
+`AnthropicBackend` fills it from the response, `ReplayBackend` reads an optional `page-N.usage.json`
+next to `page-N.json`, and a backend that reports nothing gets a characters / 4 estimate marked
+`estimated`. `extract_spec(..., max_input_tokens=N)` stops before the call whose estimated input
+(system prompt plus page prompt) would take the running total, counted from reported usage
+(cache tokens included), past N. Everything extracted so far is kept, the unread pages become one
+`token_cap` review item, and the result's `stopped_at_page` says where. `concord extract` prints
+per-page and total tokens to stderr, writes `<out>.usage.json`, and defaults `--max-input-tokens`
+to 150000. `--record DIR` wraps any backend in `RecordingBackend`, which saves each raw response
+and its usage so a live run can be replayed without the API. No price is hardcoded: cost belongs in
+the STATUS report, from the current price list.

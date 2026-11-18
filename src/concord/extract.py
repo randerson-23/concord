@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -58,8 +58,57 @@ class Fragment(_Model):
     strategies: list[Strategy] = Field(default_factory=list)
 
 
+TOKEN_CHARS = 4  # rough characters per token, for estimates only
+
+
+@dataclass(frozen=True)
+class Usage:
+    """Token counts for one API call (cache fields are zero when the API reports none)."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
+
+    @property
+    def total_input(self) -> int:
+        return self.input_tokens + self.cache_creation_input_tokens + self.cache_read_input_tokens
+
+    def __add__(self, other: Usage) -> Usage:
+        return Usage(
+            self.input_tokens + other.input_tokens,
+            self.output_tokens + other.output_tokens,
+            self.cache_creation_input_tokens + other.cache_creation_input_tokens,
+            self.cache_read_input_tokens + other.cache_read_input_tokens,
+        )
+
+    def to_dict(self) -> dict[str, int]:
+        return asdict(self)
+
+
+def usage_from_response(raw: Any) -> Usage:
+    """Read an Anthropic ``usage`` object; absent or None counts become zero."""
+
+    def count(name: str) -> int:
+        return int(getattr(raw, name, 0) or 0)
+
+    return Usage(
+        count("input_tokens"),
+        count("output_tokens"),
+        count("cache_creation_input_tokens"),
+        count("cache_read_input_tokens"),
+    )
+
+
+def estimate_tokens(text: str) -> int:
+    return len(text) // TOKEN_CHARS
+
+
 class Backend(Protocol):
-    """Anything that can turn a prompt into a JSON string matching ``Fragment``."""
+    """Anything that can turn a prompt into a JSON string matching ``Fragment``.
+
+    A backend may also expose ``last_usage`` (a :class:`Usage`) describing its latest call.
+    """
 
     def complete(self, system: str, user: str, schema: dict[str, Any]) -> str: ...
 
@@ -72,9 +121,14 @@ class ReplayBackend:
 
     def __init__(self, directory: str | Path) -> None:
         self.directory = Path(directory)
+        self.last_usage: Usage | None = None
 
     def complete(self, system: str, user: str, schema: dict[str, Any]) -> str:
         n = int(user.split("\n", 1)[0].removeprefix("PAGE ").split()[0])
+        usage_file = self.directory / f"page-{n}.usage.json"
+        self.last_usage = (
+            Usage(**json.loads(usage_file.read_text())) if usage_file.exists() else None
+        )
         path = self.directory / f"page-{n}.json"
         return path.read_text() if path.exists() else '{"strategies": []}'
 
@@ -93,6 +147,7 @@ class AnthropicBackend:
         self._client = anthropic.Anthropic(api_key=key)
         self.model = model
         self.max_tokens = max_tokens
+        self.last_usage: Usage | None = None
 
     def complete(self, system: str, user: str, schema: dict[str, Any]) -> str:  # pragma: no cover
         resp = self._client.messages.create(
@@ -109,10 +164,32 @@ class AnthropicBackend:
             ],
             tool_choice={"type": "tool", "name": "record_fragment"},
         )
+        self.last_usage = usage_from_response(getattr(resp, "usage", None))
         for block in resp.content:
             if block.type == "tool_use":
                 return json.dumps(block.input)
         return '{"strategies": []}'
+
+
+class RecordingBackend:
+    """Wraps a backend and saves every raw response (``page-N.json``) and its usage
+    (``page-N.usage.json``), so a live run can be replayed later without the API."""
+
+    def __init__(self, inner: Backend, directory: str | Path) -> None:
+        self.inner = inner
+        self.directory = Path(directory)
+        self.directory.mkdir(parents=True, exist_ok=True)
+        self.last_usage: Usage | None = None
+
+    def complete(self, system: str, user: str, schema: dict[str, Any]) -> str:
+        n = int(user.split("\n", 1)[0].removeprefix("PAGE ").split()[0])
+        raw = self.inner.complete(system, user, schema)
+        self.last_usage = getattr(self.inner, "last_usage", None)
+        (self.directory / f"page-{n}.json").write_text(raw)
+        if self.last_usage is not None:
+            usage_json = json.dumps(self.last_usage.to_dict())
+            (self.directory / f"page-{n}.usage.json").write_text(usage_json)
+        return raw
 
 
 @dataclass(frozen=True)
@@ -131,10 +208,46 @@ class ReviewItem:
         }
 
 
+@dataclass(frozen=True)
+class PageUsage:
+    page: int
+    usage: Usage
+    estimated: bool  # True when the backend reported no usage and this is characters / 4
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"page": self.page, "estimated": self.estimated, **self.usage.to_dict()}
+
+
 @dataclass
 class ExtractionResult:
     spec: AlgoSpec
     review: list[ReviewItem] = field(default_factory=list)
+    usage: list[PageUsage] = field(default_factory=list)
+    stopped_at_page: int | None = None  # set when the input-token cap ended the run early
+
+    @property
+    def total_usage(self) -> Usage:
+        return sum((p.usage for p in self.usage), Usage())
+
+    def usage_dict(self, max_input_tokens: int | None) -> dict[str, Any]:
+        return {
+            "max_input_tokens": max_input_tokens,
+            "stopped_at_page": self.stopped_at_page,
+            "pages": [p.to_dict() for p in self.usage],
+            "total": {**self.total_usage.to_dict(), "total_input": self.total_usage.total_input},
+        }
+
+    def usage_text(self) -> str:
+        lines = [
+            f"page {p.page}: input {p.usage.total_input}, output {p.usage.output_tokens}"
+            + (" (estimated)" if p.estimated else "")
+            for p in self.usage
+        ]
+        total = self.total_usage
+        lines.append(f"total: input {total.total_input}, output {total.output_tokens}")
+        if self.stopped_at_page is not None:
+            lines.append(f"stopped before page {self.stopped_at_page}: input-token cap reached")
+        return "\n".join(lines)
 
     def review_text(self) -> str:
         if not self.review:
@@ -309,13 +422,40 @@ def extract_spec(
     backend: Backend,
     *,
     provider: str | None = None,
+    max_input_tokens: int | None = None,
 ) -> ExtractionResult:
-    """Run the pipeline over every page of ``pages``."""
+    """Run the pipeline over every page of ``pages``.
+
+    ``max_input_tokens`` stops the run before the call that would pass the cap, keeping
+    everything extracted so far; the pages that were not read go to the review list.
+    """
     schema = Fragment.model_json_schema()
     review: list[ReviewItem] = []
     strategies: list[Strategy] = []
+    page_usage: list[PageUsage] = []
+    used_input = 0
+    stopped_at: int | None = None
     for page in pages:
-        raw = backend.complete(SYSTEM_PROMPT, build_prompt(source, page), schema)
+        prompt = build_prompt(source, page)
+        estimate = estimate_tokens(SYSTEM_PROMPT + prompt)
+        if max_input_tokens is not None and used_input + estimate > max_input_tokens:
+            stopped_at = page.number
+            review.append(
+                ReviewItem(
+                    page.number,
+                    "Extraction",
+                    "token_cap",
+                    f"stopped before page {page.number}: {used_input} input tokens used, "
+                    f"next page needs about {estimate}, cap is {max_input_tokens}",
+                )
+            )
+            break
+        raw = backend.complete(SYSTEM_PROMPT, prompt, schema)
+        reported = getattr(backend, "last_usage", None)
+        page_usage.append(
+            PageUsage(page.number, reported or Usage(input_tokens=estimate), reported is None)
+        )
+        used_input = sum(p.usage.total_input for p in page_usage)
         try:
             frag = Fragment.model_validate_json(raw)
         except ValidationError as exc:
@@ -326,4 +466,4 @@ def extract_spec(
         kept = _filter_fragment(frag, pages, source.id, page.number, review)
         strategies = _merge(strategies, kept, page.number, review)
     spec = AlgoSpec(provider=provider, sources=[source], strategies=strategies)
-    return ExtractionResult(spec, review)
+    return ExtractionResult(spec, review, page_usage, stopped_at)
