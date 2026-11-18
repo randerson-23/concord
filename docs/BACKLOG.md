@@ -147,8 +147,10 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
       code.
     - Then one live run on `nyse-pillar-to-algo-fix` (`use: ok`, already cached
       by 25a, a short PDF that carries wire tags: TargetStrategy 20046,
-      EffectiveTime 168, ExpireTime 126, MaxParticipationRate 20050). If it is
-      missing from the cache, use `nyse-pillar-gateway-fix` or
+      EffectiveTime 168, ExpireTime 126, MaxParticipationRate 20050). The cache
+      is per container and is lost on a rebuild, so run
+      `concord corpus fetch nyse-pillar-to-algo-fix` first (one request, and it
+      reuses the cache when present). If that comes back `blocked`, use `nyse-pillar-gateway-fix` or
       `commanderfx-rules-of-engagement`, and say which you used. Run
       `concord extract` and then `concord lint` on the result.
     - Write all outputs, including the raw recorded responses, to
