@@ -20,12 +20,21 @@ from concord.diff import diff_specs
 from concord.extract import AnthropicBackend, RecordingBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
 from concord.fixdict import dictionary_path, load_dictionary
+from concord.html import read_html
 from concord.ir import AlgoSpec, SourceDocument
 from concord.lint import lint_spec
 from concord.orchestra import write_orchestra
-from concord.pdf import read_pdf
+from concord.pdf import Page, read_pdf
 from concord.site import write_site
 from concord.verify import verify_spec
+
+
+def _is_html(path: str) -> bool:
+    return Path(path).suffix.lower() in (".html", ".htm")
+
+
+def _read_pages(path: str) -> list[Page]:
+    return read_html(path) if _is_html(path) else read_pdf(path)
 
 
 def _load(path: str) -> AlgoSpec:
@@ -149,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
                 sid, sep, path = item.partition("=")
                 if not sep or not sid or not path:
                     raise ValueError(f"--source {item!r}: expected ID=PDF_PATH")
-                docs[sid] = read_pdf(path)
+                docs[sid] = _read_pages(path)
             vr = verify_spec(_load(args.spec), docs)
             print(vr.to_json() if args.format == "json" else vr.to_text())
             if not vr.ok:
@@ -158,9 +167,10 @@ def main(argv: list[str] | None = None) -> int:
             backend = ReplayBackend(args.replay) if args.replay else AnthropicBackend()
             if args.record:
                 backend = RecordingBackend(backend, args.record)
-            src = SourceDocument(id=args.id, title=args.title, kind="pdf", url=args.url)
+            kind = "html" if _is_html(args.pdf) else "pdf"
+            src = SourceDocument(id=args.id, title=args.title, kind=kind, url=args.url)
             res = extract_spec(
-                read_pdf(args.pdf),
+                _read_pages(args.pdf),
                 src,
                 backend,
                 provider=args.provider,

@@ -148,7 +148,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     (hard rule 2), and report pages, tokens, estimated cost (current price via the `claude-api`
     skill), verified facts, the review list's top 3 reasons, the lint findings and where extraction
     went wrong.
-25b. `todo` **HTML text layer for HTML sources.** `concord.html.read_html(path) ->
+25b. `done 2026-11-19` **HTML text layer for HTML sources.** `concord.html.read_html(path) ->
     list[Page]` turns an HTML spec into pages, one per `h1`/`h2` section, with the
     section heading as the page's `locator` (the `Citation.locator` field already
     exists). It keeps tables as layout text, so `extract_tables` (item 21) works
@@ -159,6 +159,12 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     sections and a field table: section count, table rows, and a verify pass
     and fail on a quote. The opt-in test reads the cached Saxo page
     (`saxo-algo-order-fix-tags`) and finds tag 847 in a table.
+    Done (decision D24): `concord.html.read_html` (stdlib parser, depth 200, 20 MB cap) and a
+    `locator` field on `pdf.Page`; `build_prompt` names the section; `concord verify` and
+    `concord extract` pick the reader by `.html`/`.htm` suffix. Tests: `tests/test_html.py` (sections,
+    table rows, verify pass/fail, prompt, determinism, depth, malformed, CLI). The opt-in test reads
+    the cached Saxo page: 22 sections, 20 tables, tag 847 found. Follow-up: item 11 (check
+    `Citation.locator` against `Page.locator`); 25c should use `read_html` for `kind: html` sources.
 25c. `todo` **Corpus pipeline, part 2: `concord corpus convert ID`.** One command
     runs extract (PDF or HTML, `--replay DIR` or live), then verify, then lint
     (item 24). The review list gets lint errors as well as unverified facts. It

@@ -46,6 +46,7 @@ class Page:
     text: str  # reading-order text
     layout_text: str  # column-preserving text
     tables: list[Table] = field(default_factory=list)
+    locator: str | None = None  # section heading, for sources that have no real pages (HTML)
 
 
 def _cells(line: str) -> list[tuple[int, str]]:

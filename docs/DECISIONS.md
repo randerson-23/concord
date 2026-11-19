@@ -256,3 +256,13 @@ per-page and total tokens to stderr, writes `<out>.usage.json`, and defaults `--
 to 150000. `--record DIR` wraps any backend in `RecordingBackend`, which saves each raw response
 and its usage so a live run can be replayed without the API. No price is hardcoded: cost belongs in
 the STATUS report, from the current price list.
+
+## D24 · 2026-11-19 · HTML sources become Pages, one per h1/h2 section
+
+`concord.html.read_html(path)` returns `list[Page]` so the extractor, verifier and table finder need
+no HTML-specific code. A page is one `h1`/`h2` section (text before the first heading is page 1 with no
+locator); `Page.number` is the section index and `Page.locator` the heading, which the extraction
+prompt tells the model to cite. Tables are written to layout text with two-space column gaps, so
+`extract_tables` works unchanged; nested tables are flattened into their cell. Scripts, styles and
+`<head>` are dropped; stdlib `html.parser` only; nesting over 200 or a file over 20 MB raises
+`HtmlError`. The CLI picks the reader by file suffix. No new dependency.

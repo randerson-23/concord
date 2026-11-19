@@ -6,12 +6,12 @@
 
 ## Last run
 
-**2026-11-18 (daily firing) — extraction usage accounting.** Worker built the first half of backlog
-item 26 (D23): token usage is captured per page (input, output, cache), `concord extract` prints it
-to stderr and writes `<out>.usage.json`, `--max-input-tokens` (default 150000) stops before the call
-that would exceed it and keeps what was extracted, and `--record DIR` saves raw responses for replay.
-The live run (26b) did not happen: `ANTHROPIC_API_KEY` is not set in this session (see Needs owner 8).
-No new dependency. Before that: corpus fetch and plan (25a), `concord lint` (24).
+**2026-11-19 (daily firing) — HTML text layer (backlog 25b, D24).** Worker built
+`concord.html.read_html`: HTML specs become one page per `h1`/`h2` section with the heading as
+locator, tables kept as layout text, stdlib only. `concord verify` and `concord extract` accept
+`.html` files. The cached Saxo page reads as 22 sections and 20 tables, and tag 847 is found in a
+table. Item 26b is still blocked: `ANTHROPIC_API_KEY` is not set in this session (Needs owner 8).
+No new dependency.
 
 ## Needs owner
 
