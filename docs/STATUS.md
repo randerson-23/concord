@@ -33,6 +33,12 @@ PR or edit this file.
    one-word answer:* **Restart**: resume or restart the "Concord Worker" session (a fresh container
    picks the variable up), and the next firing runs 26b. Nothing else is blocked. If you would
    rather not restart, say **Skip** and the Worker moves on to items 25b and 25c.
+   *PM 2026-11-19:* the scheduled wake-up does not count as a resume. The PM session also woke
+   today without the variable, so only a **fresh session** (a new container) gets it. Options:
+   (a) in the Claude app, start a new "Concord Worker" session and point the Worker scheduled task
+   at it (D14 stays intact); or (b) let the PM do the one live run from a fresh one-off session
+   it creates, with your OK. *Recommended:* **(a)**. The Worker works on 25b (HTML text layer) and 25c
+   until then, so nothing is idle.
 6. **FIXatdl XSD license.** The official XSDs say use is "subject to the
    disclaimer" in the written spec. *Recommended:* keep them out of the repo
    (current approach — tests fetch them on demand) until you or a lawyer has
