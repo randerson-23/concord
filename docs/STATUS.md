@@ -6,12 +6,11 @@
 
 ## Last run
 
-**2026-11-19 (daily firing) — HTML text layer (backlog 25b, D24).** Worker built
-`concord.html.read_html`: HTML specs become one page per `h1`/`h2` section with the heading as
-locator, tables kept as layout text, stdlib only. `concord verify` and `concord extract` accept
-`.html` files. The cached Saxo page reads as 22 sections and 20 tables, and tag 847 is found in a
-table. Item 26b is still blocked: `ANTHROPIC_API_KEY` is not set in this session (Needs owner 8).
-No new dependency.
+**2026-11-20 (daily firing) — `concord corpus convert` (backlog 25c, D25).** Worker built the one-command
+pipeline: extract (PDF or HTML, live or replay), verify, lint, then `spec.json`, `strategies.xml`,
+`orchestra.xml`, `site/`, `review.json` and `usage.json` under git-ignored `corpus/out/<id>/`; exit 2
+when the review list is not empty. Tested end to end on synthetic PDF and HTML replays. Item 26b is
+still blocked: `ANTHROPIC_API_KEY` is not set in this session (Needs owner 8). No new dependency.
 
 ## Needs owner
 

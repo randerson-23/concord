@@ -266,3 +266,13 @@ prompt tells the model to cite. Tables are written to layout text with two-space
 `extract_tables` works unchanged; nested tables are flattened into their cell. Scripts, styles and
 `<head>` are dropped; stdlib `html.parser` only; nesting over 200 or a file over 20 MB raises
 `HtmlError`. The CLI picks the reader by file suffix. No new dependency.
+
+## D25 · 2026-11-20 · `concord corpus convert`: one command, derived output stays out of git
+
+`concord corpus convert ID` reads a `use: ok` pdf/html source from `corpus/cache/<id>/` (it never
+fetches), extracts (live or `--replay`), re-verifies every citation, lints standard tags, and writes
+`corpus/out/<id>/` (git-ignored: derived from a third-party document, hard rule 2). The review list
+(`review.json`, exit 2 when non-empty) holds extraction items (`unverified`, `conflict`,
+`invalid_response`, `token_cap`), `verify_failed` and `lint_error`; lint warnings are not review items.
+The provider is the source's `publisher`. Both FIX dictionaries must be present before any model
+call, so a missing one costs nothing. Output is deterministic. No new dependency.

@@ -25,6 +25,7 @@ from concord.ir import AlgoSpec, SourceDocument
 from concord.lint import lint_spec
 from concord.orchestra import write_orchestra
 from concord.pdf import Page, read_pdf
+from concord.pipeline import DEFAULT_OUT, convert_source
 from concord.site import write_site
 from concord.verify import verify_spec
 
@@ -130,6 +131,18 @@ def main(argv: list[str] | None = None) -> int:
         cp.add_argument("--cache-dir", default=str(DEFAULT_CACHE))
         if name == "plan":
             cp.add_argument("--price-per-mtok", type=float, help="price per million input tokens")
+    cv = cosub.add_parser(
+        "convert", help="extract, verify, lint and write every output for a source"
+    )
+    cv.add_argument("id", help="source id from corpus/sources.yaml (fetch it first)")
+    cv.add_argument("--sources", default=str(DEFAULT_SOURCES))
+    cv.add_argument("--cache-dir", default=str(DEFAULT_CACHE))
+    cv.add_argument("--out-dir", default=str(DEFAULT_OUT), help="default corpus/out")
+    cv.add_argument("--replay", metavar="DIR", help="use recorded page-N.json responses, no API")
+    cv.add_argument("--record", metavar="DIR", help="save raw responses and usage (live runs)")
+    cv.add_argument("--max-input-tokens", type=int, default=150_000)
+    cv.add_argument("--fix-version", choices=["4.2", "4.4", "latest"], default="latest")
+    cv.add_argument("--dict-dir", help="directory holding the Orchestra dictionary files")
     li = sub.add_parser("lint", help="check standard FIX tags against the FIX dictionary")
     li.add_argument("spec")
     li.add_argument("--fix-version", choices=["4.2", "4.4", "latest"], default="latest")
@@ -189,6 +202,25 @@ def main(argv: list[str] | None = None) -> int:
             if res.review:
                 return 2
         elif args.cmd == "corpus":
+            if args.corpus_cmd == "convert":
+                backend = ReplayBackend(args.replay) if args.replay else AnthropicBackend()
+                if args.record:
+                    backend = RecordingBackend(backend, args.record)
+                done = convert_source(
+                    args.id,
+                    backend,
+                    sources=args.sources,
+                    cache_dir=args.cache_dir,
+                    out_root=args.out_dir,
+                    fix_version=args.fix_version,
+                    dict_dir=args.dict_dir,
+                    max_input_tokens=args.max_input_tokens,
+                )
+                if done.extraction is not None:
+                    print(done.extraction.usage_text(), file=sys.stderr)
+                print(f"wrote {done.out_dir}")
+                print(done.review_text())
+                return 2 if done.review else 0
             sources = load_sources(args.sources)
             if args.corpus_cmd == "fetch":
                 results = fetch_sources(sources, args.cache_dir, args.ids)

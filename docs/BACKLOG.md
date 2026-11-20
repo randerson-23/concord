@@ -165,7 +165,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     table rows, verify pass/fail, prompt, determinism, depth, malformed, CLI). The opt-in test reads
     the cached Saxo page: 22 sections, 20 tables, tag 847 found. Follow-up: item 11 (check
     `Citation.locator` against `Page.locator`); 25c should use `read_html` for `kind: html` sources.
-25c. `todo` **Corpus pipeline, part 2: `concord corpus convert ID`.** One command
+25c. `done 2026-11-20` **Corpus pipeline, part 2: `concord corpus convert ID`.** One command
     runs extract (PDF or HTML, `--replay DIR` or live), then verify, then lint
     (item 24). The review list gets lint errors as well as unverified facts. It
     writes `corpus/out/<id>/` with `spec.json`, `strategies.xml`
@@ -178,6 +178,13 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     and copy `usage.json` into the output folder. Live use is blocked only until
     the key reaches a session (STATUS 8). Add `corpus/out/` to `.gitignore`, which does not
     cover it today (hard rule 2: the output is derived from third-party documents).
+    Done (decision D25): `concord.pipeline.convert_source` and `concord corpus convert ID` (`--replay`,
+    `--record`, `--max-input-tokens`, `--fix-version`, `--dict-dir`, `--out-dir`). Writes `spec.json`,
+    `strategies.xml`, `orchestra.xml`, `site/`, `review.json`, `usage.json`; exit 2 if the review list is
+    not empty (extraction items, failed citations, lint errors). Dictionaries load before any model call.
+    `corpus/out/` is git-ignored. Tests: `tests/test_pipeline.py` (PDF and HTML replay, locators, lint
+    error and unverified fact in `review.json`, byte-identical reruns, token cap, bad requests, CLI).
+    Follow-up: 26b is the first live use (needs the key, STATUS 8).
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.
