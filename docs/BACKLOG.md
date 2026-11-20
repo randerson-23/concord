@@ -172,8 +172,11 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     (FIXatdl), `orchestra.xml`, `site/` and `review.json`. Exit 2 if the review
     list is not empty. Acceptance: a replay test end to end on a synthetic PDF
     with recorded responses writes all five outputs, a lint error lands in
-    `review.json`, and the output is byte-identical across two runs. Live use
-    stays blocked on STATUS 4. Add `corpus/out/` to `.gitignore`, which does not
+    `review.json`, and the output is byte-identical across two runs. Add a
+    second replay case on a synthetic HTML page, since 25b is done; its citations
+    carry the section `locator`. Thread `--max-input-tokens` through from 26a,
+    and copy `usage.json` into the output folder. Live use is blocked only until
+    the key reaches a session (STATUS 8). Add `corpus/out/` to `.gitignore`, which does not
     cover it today (hard rule 2: the output is derived from third-party documents).
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
