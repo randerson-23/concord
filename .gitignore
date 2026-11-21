@@ -11,3 +11,5 @@ build/
 corpus/cache/
 # Third-party schemas stay out of the repo until their license is confirmed.
 schemas/vendor/
+# Derived from third-party documents (hard rule 2): never commit.
+corpus/out/

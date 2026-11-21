@@ -256,3 +256,32 @@ per-page and total tokens to stderr, writes `<out>.usage.json`, and defaults `--
 to 150000. `--record DIR` wraps any backend in `RecordingBackend`, which saves each raw response
 and its usage so a live run can be replayed without the API. No price is hardcoded: cost belongs in
 the STATUS report, from the current price list.
+
+## D24 · 2026-11-19 · HTML sources become Pages, one per h1/h2 section
+
+`concord.html.read_html(path)` returns `list[Page]` so the extractor, verifier and table finder need
+no HTML-specific code. A page is one `h1`/`h2` section (text before the first heading is page 1 with no
+locator); `Page.number` is the section index and `Page.locator` the heading, which the extraction
+prompt tells the model to cite. Tables are written to layout text with two-space column gaps, so
+`extract_tables` works unchanged; nested tables are flattened into their cell. Scripts, styles and
+`<head>` are dropped; stdlib `html.parser` only; nesting over 200 or a file over 20 MB raises
+`HtmlError`. The CLI picks the reader by file suffix. No new dependency.
+
+## D25 · 2026-11-20 · `concord corpus convert`: one command, derived output stays out of git
+
+`concord corpus convert ID` reads a `use: ok` pdf/html source from `corpus/cache/<id>/` (it never
+fetches), extracts (live or `--replay`), re-verifies every citation, lints standard tags, and writes
+`corpus/out/<id>/` (git-ignored: derived from a third-party document, hard rule 2). The review list
+(`review.json`, exit 2 when non-empty) holds extraction items (`unverified`, `conflict`,
+`invalid_response`, `token_cap`), `verify_failed` and `lint_error`; lint warnings are not review items.
+The provider is the source's `publisher`. Both FIX dictionaries must be present before any model
+call, so a missing one costs nothing. Output is deterministic. No new dependency.
+
+## D26 · 2026-11-21 · Verifier: locator check, ambiguity as a warning
+
+`verify_citation` adds `locator_mismatch` (a failure): when the cited page has a locator (an HTML
+section heading) and the citation gives one, they must agree after `fold`. Pages without a locator
+(every PDF page, and HTML text before the first heading) cannot check one, so a free-form locator such
+as "table 4.2" passes unchanged. A quote that also appears on other pages is still `verified` (D10:
+no new failure for a true quote) and is reported through `CitationResult.also_on` and
+`VerifyReport.ambiguous`, in text and in JSON under `ambiguous`; the extractor and `ok` ignore it.

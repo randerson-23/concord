@@ -20,12 +20,22 @@ from concord.diff import diff_specs
 from concord.extract import AnthropicBackend, RecordingBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
 from concord.fixdict import dictionary_path, load_dictionary
+from concord.html import read_html
 from concord.ir import AlgoSpec, SourceDocument
 from concord.lint import lint_spec
 from concord.orchestra import write_orchestra
-from concord.pdf import read_pdf
+from concord.pdf import Page, read_pdf
+from concord.pipeline import DEFAULT_OUT, convert_source
 from concord.site import write_site
 from concord.verify import verify_spec
+
+
+def _is_html(path: str) -> bool:
+    return Path(path).suffix.lower() in (".html", ".htm")
+
+
+def _read_pages(path: str) -> list[Page]:
+    return read_html(path) if _is_html(path) else read_pdf(path)
 
 
 def _load(path: str) -> AlgoSpec:
@@ -121,6 +131,18 @@ def main(argv: list[str] | None = None) -> int:
         cp.add_argument("--cache-dir", default=str(DEFAULT_CACHE))
         if name == "plan":
             cp.add_argument("--price-per-mtok", type=float, help="price per million input tokens")
+    cv = cosub.add_parser(
+        "convert", help="extract, verify, lint and write every output for a source"
+    )
+    cv.add_argument("id", help="source id from corpus/sources.yaml (fetch it first)")
+    cv.add_argument("--sources", default=str(DEFAULT_SOURCES))
+    cv.add_argument("--cache-dir", default=str(DEFAULT_CACHE))
+    cv.add_argument("--out-dir", default=str(DEFAULT_OUT), help="default corpus/out")
+    cv.add_argument("--replay", metavar="DIR", help="use recorded page-N.json responses, no API")
+    cv.add_argument("--record", metavar="DIR", help="save raw responses and usage (live runs)")
+    cv.add_argument("--max-input-tokens", type=int, default=150_000)
+    cv.add_argument("--fix-version", choices=["4.2", "4.4", "latest"], default="latest")
+    cv.add_argument("--dict-dir", help="directory holding the Orchestra dictionary files")
     li = sub.add_parser("lint", help="check standard FIX tags against the FIX dictionary")
     li.add_argument("spec")
     li.add_argument("--fix-version", choices=["4.2", "4.4", "latest"], default="latest")
@@ -149,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
                 sid, sep, path = item.partition("=")
                 if not sep or not sid or not path:
                     raise ValueError(f"--source {item!r}: expected ID=PDF_PATH")
-                docs[sid] = read_pdf(path)
+                docs[sid] = _read_pages(path)
             vr = verify_spec(_load(args.spec), docs)
             print(vr.to_json() if args.format == "json" else vr.to_text())
             if not vr.ok:
@@ -158,9 +180,10 @@ def main(argv: list[str] | None = None) -> int:
             backend = ReplayBackend(args.replay) if args.replay else AnthropicBackend()
             if args.record:
                 backend = RecordingBackend(backend, args.record)
-            src = SourceDocument(id=args.id, title=args.title, kind="pdf", url=args.url)
+            kind = "html" if _is_html(args.pdf) else "pdf"
+            src = SourceDocument(id=args.id, title=args.title, kind=kind, url=args.url)
             res = extract_spec(
-                read_pdf(args.pdf),
+                _read_pages(args.pdf),
                 src,
                 backend,
                 provider=args.provider,
@@ -179,6 +202,25 @@ def main(argv: list[str] | None = None) -> int:
             if res.review:
                 return 2
         elif args.cmd == "corpus":
+            if args.corpus_cmd == "convert":
+                backend = ReplayBackend(args.replay) if args.replay else AnthropicBackend()
+                if args.record:
+                    backend = RecordingBackend(backend, args.record)
+                done = convert_source(
+                    args.id,
+                    backend,
+                    sources=args.sources,
+                    cache_dir=args.cache_dir,
+                    out_root=args.out_dir,
+                    fix_version=args.fix_version,
+                    dict_dir=args.dict_dir,
+                    max_input_tokens=args.max_input_tokens,
+                )
+                if done.extraction is not None:
+                    print(done.extraction.usage_text(), file=sys.stderr)
+                print(f"wrote {done.out_dir}")
+                print(done.review_text())
+                return 2 if done.review else 0
             sources = load_sources(args.sources)
             if args.corpus_cmd == "fetch":
                 results = fetch_sources(sources, args.cache_dir, args.ids)

@@ -89,3 +89,51 @@ def test_cli_verify(tmp_path: Path, capsys) -> None:
     assert main(["verify", str(f)]) == 2  # no document supplied for source
     assert "unknown_source" in capsys.readouterr().out
     assert main(["verify", str(f), "--source", "bogus"]) == 1
+
+
+def test_locator_must_match_the_heading_of_a_page_that_has_one() -> None:
+    pages = [
+        Page(1, "Preamble text.", "", locator=None),
+        Page(2, "Acme TWAP spreads the order.", "", locator="Overview"),
+    ]
+
+    def cite(page: int, locator: str | None) -> Citation:
+        return Citation(source_id="doc", page=page, quote="spreads the order", locator=locator)
+
+    ok = Citation(source_id="doc", page=2, quote="spreads the order", locator="  Overview ")
+    assert verify_citation(ok, pages)[0] is Status.VERIFIED
+    bad = cite(2, "Fields")
+    assert verify_citation(bad, pages) == (Status.LOCATOR_MISMATCH, ())
+    assert verify_citation(cite(2, None), pages)[0] is Status.VERIFIED  # no locator given
+    # a page with no heading, or a PDF page, cannot check a free-form locator
+    quote_on_1 = Citation(source_id="doc", page=1, quote="Preamble text", locator="table 4.2")
+    assert verify_citation(quote_on_1, pages)[0] is Status.VERIFIED
+    pdf_page = [Page(1, "Preamble text.", "")]
+    assert verify_citation(quote_on_1, pdf_page)[0] is Status.VERIFIED
+
+
+def test_quote_on_several_pages_is_flagged_but_still_verifies() -> None:
+    pages = [
+        Page(1, "Style is Passive or Active.", ""),
+        Page(2, "Passive orders rest on the book.", ""),
+        Page(3, "Nothing here.", ""),
+    ]
+    spec = AlgoSpec(
+        sources=[SourceDocument(id="doc", title="S", kind="pdf")],
+        strategies=[
+            Strategy(
+                name="A",
+                wire_value="1",
+                citations=[_c(1, "Passive"), _c(1, "Style is Passive")],
+            )
+        ],
+    )
+    report = verify_spec(spec, {"doc": pages})
+    assert report.ok  # D10 strictness kept: ambiguity is a warning, not a failure
+    (amb,) = report.ambiguous
+    assert amb.citation.quote == "Passive" and amb.also_on == (2,)
+    text = report.to_text()
+    assert "2/2 citations verified" in text
+    assert "1 quotes match several pages" in text and "also appears on page 2" in text
+    assert json.loads(report.to_json())["ambiguous"][0]["also_on"] == [2]
+    assert json.loads(report.to_json())["failures"] == []

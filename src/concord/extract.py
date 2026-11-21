@@ -258,10 +258,13 @@ class ExtractionResult:
 
 
 def build_prompt(source: SourceDocument, page: Page) -> str:
+    where = f'section "{page.locator}"' if page.locator else f"page {page.number}"
     return (
         f"PAGE {page.number}\n"
         f"source_id: {source.id}  (title: {source.title})\n"
-        f"Extract from page {page.number} only. Cite page={page.number}.\n"
+        f"Extract from {where} only. Cite page={page.number}"
+        + (f' and locator="{page.locator}"' if page.locator else "")
+        + ".\n"
         f"--- page text ---\n{page.text}\n--- layout text ---\n{page.layout_text}\n"
     )
 

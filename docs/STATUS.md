@@ -6,14 +6,18 @@
 
 ## Last run
 
-**2026-11-18 (daily firing) — extraction usage accounting.** Worker built the first half of backlog
-item 26 (D23): token usage is captured per page (input, output, cache), `concord extract` prints it
-to stderr and writes `<out>.usage.json`, `--max-input-tokens` (default 150000) stops before the call
-that would exceed it and keeps what was extracted, and `--record DIR` saves raw responses for replay.
-The live run (26b) did not happen: `ANTHROPIC_API_KEY` is not set in this session (see Needs owner 8).
-No new dependency. Before that: corpus fetch and plan (25a), `concord lint` (24).
+**2026-11-21 (daily firing) — verifier follow-ups (backlog 11, D26).** Worker added a locator check
+(a citation's locator must equal the heading of an HTML page it cites) and flags quotes that appear on
+several pages as a warning that never fails a citation. Backlog item 27 (merge PR #22) was not done:
+the Worker routine's prompt forbids merging without your direct word (Needs owner 9). Item 26b is
+still blocked on the API key (Needs owner 8). No new dependency.
 
 ## Needs owner
+
+9. **Merge PR #22 (`dev` → `main`).** The PM's backlog item 27 asks the Worker to merge per D12, but
+   the Worker routine's prompt says not to merge unless you tell the Worker directly. CI is green on
+   the pushed `dev` head. *Recommended one-word answer:* **Merge** (reply in the Worker session), or
+   merge it yourself on GitHub. *Blocks:* nothing in the build; `main` is behind `dev` by 25b, 25c and 11.
 
 Each item: the question, the recommended answer, what it blocks. Reply in the
 PR or edit this file.
@@ -33,6 +37,12 @@ PR or edit this file.
    one-word answer:* **Restart**: resume or restart the "Concord Worker" session (a fresh container
    picks the variable up), and the next firing runs 26b. Nothing else is blocked. If you would
    rather not restart, say **Skip** and the Worker moves on to items 25b and 25c.
+   *PM 2026-11-19:* the scheduled wake-up does not count as a resume. The PM session also woke
+   today without the variable, so only a **fresh session** (a new container) gets it. Options:
+   (a) in the Claude app, start a new "Concord Worker" session and point the Worker scheduled task
+   at it (D14 stays intact); or (b) let the PM do the one live run from a fresh one-off session
+   it creates, with your OK. *Recommended:* **(a)**. The Worker works on 25b (HTML text layer) and 25c
+   until then, so nothing is idle.
 6. **FIXatdl XSD license.** The official XSDs say use is "subject to the
    disclaimer" in the written spec. *Recommended:* keep them out of the repo
    (current approach — tests fetch them on demand) until you or a lawyer has

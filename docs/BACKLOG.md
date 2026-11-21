@@ -148,7 +148,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     (hard rule 2), and report pages, tokens, estimated cost (current price via the `claude-api`
     skill), verified facts, the review list's top 3 reasons, the lint findings and where extraction
     went wrong.
-25b. `todo` **HTML text layer for HTML sources.** `concord.html.read_html(path) ->
+25b. `done 2026-11-19` **HTML text layer for HTML sources.** `concord.html.read_html(path) ->
     list[Page]` turns an HTML spec into pages, one per `h1`/`h2` section, with the
     section heading as the page's `locator` (the `Citation.locator` field already
     exists). It keeps tables as layout text, so `extract_tables` (item 21) works
@@ -159,19 +159,49 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     sections and a field table: section count, table rows, and a verify pass
     and fail on a quote. The opt-in test reads the cached Saxo page
     (`saxo-algo-order-fix-tags`) and finds tag 847 in a table.
-25c. `todo` **Corpus pipeline, part 2: `concord corpus convert ID`.** One command
+    Done (decision D24): `concord.html.read_html` (stdlib parser, depth 200, 20 MB cap) and a
+    `locator` field on `pdf.Page`; `build_prompt` names the section; `concord verify` and
+    `concord extract` pick the reader by `.html`/`.htm` suffix. Tests: `tests/test_html.py` (sections,
+    table rows, verify pass/fail, prompt, determinism, depth, malformed, CLI). The opt-in test reads
+    the cached Saxo page: 22 sections, 20 tables, tag 847 found. Follow-up: item 11 (check
+    `Citation.locator` against `Page.locator`); 25c should use `read_html` for `kind: html` sources.
+25c. `done 2026-11-20` **Corpus pipeline, part 2: `concord corpus convert ID`.** One command
     runs extract (PDF or HTML, `--replay DIR` or live), then verify, then lint
     (item 24). The review list gets lint errors as well as unverified facts. It
     writes `corpus/out/<id>/` with `spec.json`, `strategies.xml`
     (FIXatdl), `orchestra.xml`, `site/` and `review.json`. Exit 2 if the review
     list is not empty. Acceptance: a replay test end to end on a synthetic PDF
     with recorded responses writes all five outputs, a lint error lands in
-    `review.json`, and the output is byte-identical across two runs. Live use
-    stays blocked on STATUS 4. Add `corpus/out/` to `.gitignore`, which does not
+    `review.json`, and the output is byte-identical across two runs. Add a
+    second replay case on a synthetic HTML page, since 25b is done; its citations
+    carry the section `locator`. Thread `--max-input-tokens` through from 26a,
+    and copy `usage.json` into the output folder. Live use is blocked only until
+    the key reaches a session (STATUS 8). Add `corpus/out/` to `.gitignore`, which does not
     cover it today (hard rule 2: the output is derived from third-party documents).
-11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
+    Done (decision D25): `concord.pipeline.convert_source` and `concord corpus convert ID` (`--replay`,
+    `--record`, `--max-input-tokens`, `--fix-version`, `--dict-dir`, `--out-dir`). Writes `spec.json`,
+    `strategies.xml`, `orchestra.xml`, `site/`, `review.json`, `usage.json`; exit 2 if the review list is
+    not empty (extraction items, failed citations, lint errors). Dictionaries load before any model call.
+    `corpus/out/` is git-ignored. Tests: `tests/test_pipeline.py` (PDF and HTML replay, locators, lint
+    error and unverified fact in `review.json`, byte-identical reruns, token cap, bad requests, CLI).
+    Follow-up: 26b is the first live use (needs the key, STATUS 8).
+27. `blocked: the Worker routine prompt forbids merging without the owner's direct word (STATUS Needs owner 9)` `[safe]` **Ship the unmerged runs (D12).** PM check 2026-11-21: PR #22 (`dev` → `main`)
+    has been open since 2026-11-19, and `main` is still at `d43b351` (2026-11-18). CI passed on
+    `dev` head `8c56a3e` (run 44729408067). The 25b and 25c runs pushed but did not merge, and
+    STATUS gives no reason. At the start of the firing, confirm the PR head SHA equals local
+    `dev` and merge with a merge commit, per CLAUDE.md. If the merge is refused, record the exact
+    refusal under *Needs owner* in STATUS, as CLAUDE.md asks, instead of leaving it silent.
+    Then take the next item.
+11. `done 2026-11-21` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
+    Moved up 2026-11-21: it tightens the D10 guard before the first live run (26b). HTML
+    pages (25b) rely on `locator`, so check it against the section heading too.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.
+    Done (decision D26): a citation whose `locator` differs from the heading of the cited page (pages
+    from `read_html`) fails as `locator_mismatch`; a PDF page or a heading-less page cannot check a
+    free-form locator and ignores it. A quote that also appears on other pages still verifies but is
+    listed as ambiguous (text and JSON `ambiguous`, `CitationResult.also_on`), never a failure (D10
+    kept). Tests in `tests/test_verify.py`; the HTML test now cites real headings.
 12. `todo` **Site: library index.** `concord site` accepts several specs and writes a
     top-level index of providers and strategies across specs. This builds on
     item 6. The `--diff` part moved to item 23.
