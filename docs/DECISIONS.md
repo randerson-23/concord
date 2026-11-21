@@ -276,3 +276,12 @@ fetches), extracts (live or `--replay`), re-verifies every citation, lints stand
 `invalid_response`, `token_cap`), `verify_failed` and `lint_error`; lint warnings are not review items.
 The provider is the source's `publisher`. Both FIX dictionaries must be present before any model
 call, so a missing one costs nothing. Output is deterministic. No new dependency.
+
+## D26 · 2026-11-21 · Verifier: locator check, ambiguity as a warning
+
+`verify_citation` adds `locator_mismatch` (a failure): when the cited page has a locator (an HTML
+section heading) and the citation gives one, they must agree after `fold`. Pages without a locator
+(every PDF page, and HTML text before the first heading) cannot check one, so a free-form locator such
+as "table 4.2" passes unchanged. A quote that also appears on other pages is still `verified` (D10:
+no new failure for a true quote) and is reported through `CitationResult.also_on` and
+`VerifyReport.ambiguous`, in text and in JSON under `ambiguous`; the extractor and `ok` ignore it.

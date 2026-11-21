@@ -4,7 +4,9 @@
 The deterministic guard against an extractor (human or LLM) inventing a rule.
 A citation passes only if it names a page and a quote, and that quote appears
 on that page after whitespace, hyphenation and typographic-character folding.
-Matching is otherwise exact (case-sensitive, no fuzzy scoring). A citation that
+Matching is otherwise exact (case-sensitive, no fuzzy scoring). When the cited page has a
+locator (an HTML section heading) and the citation gives one, they must agree. A quote that also
+appears on other pages still verifies but is flagged as ambiguous. A citation that
 cannot be checked (no page, no quote, unknown source) is reported, never
 silently passed.
 """
@@ -53,6 +55,7 @@ class Status(StrEnum):
     NO_QUOTE = "no_quote"  # nothing to check
     NO_PAGE = "no_page"  # quote given but no page to check it on
     UNKNOWN_SOURCE = "unknown_source"  # no document supplied for this source_id
+    LOCATOR_MISMATCH = "locator_mismatch"  # cited locator is not the heading of the cited page
 
 
 @dataclass(frozen=True)
@@ -61,6 +64,7 @@ class CitationResult:
     citation: Citation
     status: Status
     found_on: tuple[int, ...] = ()
+    also_on: tuple[int, ...] = ()  # verified, but the same quote is on these other pages too
 
     @property
     def ok(self) -> bool:
@@ -79,11 +83,26 @@ class VerifyReport:
     def ok(self) -> bool:
         return not self.failures
 
+    @property
+    def ambiguous(self) -> list[CitationResult]:
+        """Verified citations whose quote also appears on other pages (a warning, not a failure)."""
+        return [r for r in self.results if r.ok and r.also_on]
+
+    def _ambiguous_lines(self) -> list[str]:
+        return [
+            f"  {r.location}: quote on p.{r.citation.page} also appears on page "
+            f"{', '.join(map(str, r.also_on))} [{r.citation.source_id}]"
+            for r in self.ambiguous
+        ]
+
     def to_text(self) -> str:
         bad = self.failures
         head = f"{len(self.results) - len(bad)}/{len(self.results)} citations verified"
+        warn = self._ambiguous_lines()
+        if warn:
+            warn = [f"{len(warn)} quotes match several pages (kept):", *warn]
         if not bad:
-            return head
+            return "\n".join([head, *warn])
         lines = [head + f"; {len(bad)} need review:"]
         for r in bad:
             c = r.citation
@@ -92,7 +111,7 @@ class VerifyReport:
             )
             q = f' "{c.quote}"' if c.quote else ""
             lines.append(f"  {r.location}: {r.status.value} [{c.source_id} p.{c.page}]{q}{where}")
-        return "\n".join(lines)
+        return "\n".join([*lines, *warn])
 
     def to_json(self) -> str:
         return json.dumps(
@@ -109,6 +128,16 @@ class VerifyReport:
                         "found_on": list(r.found_on),
                     }
                     for r in self.failures
+                ],
+                "ambiguous": [
+                    {
+                        "location": r.location,
+                        "source_id": r.citation.source_id,
+                        "page": r.citation.page,
+                        "quote": r.citation.quote,
+                        "also_on": list(r.also_on),
+                    }
+                    for r in self.ambiguous
                 ],
             },
             indent=2,
@@ -127,6 +156,9 @@ def verify_citation(
         return Status.NO_PAGE, ()
     if citation.page > len(pages):
         return Status.PAGE_OUT_OF_RANGE, ()
+    cited = pages[citation.page - 1]
+    if citation.locator and cited.locator and fold(citation.locator) != fold(cited.locator):
+        return Status.LOCATOR_MISMATCH, ()
     needle = fold(citation.quote)
     haystacks = [fold(p.text) for p in pages]
     if needle in haystacks[citation.page - 1]:
@@ -156,6 +188,13 @@ def verify_spec(spec: AlgoSpec, documents: Mapping[str, Sequence[Page]]) -> Veri
     """Verify every citation in ``spec`` against ``documents`` (keyed by source id)."""
     results = []
     for loc, c in _walk(spec):
-        status, found = verify_citation(c, documents.get(c.source_id))
-        results.append(CitationResult(loc, c, status, found))
+        pages = documents.get(c.source_id)
+        status, found = verify_citation(c, pages)
+        also: tuple[int, ...] = ()
+        if status is Status.VERIFIED and pages is not None and c.quote and c.page:
+            needle = fold(c.quote)
+            also = tuple(
+                i for i, p in enumerate(pages, start=1) if i != c.page and needle in fold(p.text)
+            )
+        results.append(CitationResult(loc, c, status, found, also))
     return VerifyReport(results)

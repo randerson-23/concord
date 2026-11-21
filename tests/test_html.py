@@ -64,7 +64,7 @@ def test_verify_pass_and_fail(doc: Path) -> None:
     pages = read_html(doc)
 
     def cite(page: int, quote: str) -> Citation:
-        return Citation(source_id="s", page=page, quote=quote, locator="x")
+        return Citation(source_id="s", page=page, quote=quote, locator=pages[page - 1].locator)
 
     assert verify_citation(cite(3, "TargetStrategy 847 Strategy id"), pages)[0] is Status.VERIFIED
     assert verify_citation(cite(2, "slices the order over the day"), pages)[0] is Status.VERIFIED

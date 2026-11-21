@@ -6,13 +6,18 @@
 
 ## Last run
 
-**2026-11-20 (daily firing) — `concord corpus convert` (backlog 25c, D25).** Worker built the one-command
-pipeline: extract (PDF or HTML, live or replay), verify, lint, then `spec.json`, `strategies.xml`,
-`orchestra.xml`, `site/`, `review.json` and `usage.json` under git-ignored `corpus/out/<id>/`; exit 2
-when the review list is not empty. Tested end to end on synthetic PDF and HTML replays. Item 26b is
-still blocked: `ANTHROPIC_API_KEY` is not set in this session (Needs owner 8). No new dependency.
+**2026-11-21 (daily firing) — verifier follow-ups (backlog 11, D26).** Worker added a locator check
+(a citation's locator must equal the heading of an HTML page it cites) and flags quotes that appear on
+several pages as a warning that never fails a citation. Backlog item 27 (merge PR #22) was not done:
+the Worker routine's prompt forbids merging without your direct word (Needs owner 9). Item 26b is
+still blocked on the API key (Needs owner 8). No new dependency.
 
 ## Needs owner
+
+9. **Merge PR #22 (`dev` → `main`).** The PM's backlog item 27 asks the Worker to merge per D12, but
+   the Worker routine's prompt says not to merge unless you tell the Worker directly. CI is green on
+   the pushed `dev` head. *Recommended one-word answer:* **Merge** (reply in the Worker session), or
+   merge it yourself on GitHub. *Blocks:* nothing in the build; `main` is behind `dev` by 25b, 25c and 11.
 
 Each item: the question, the recommended answer, what it blocks. Reply in the
 PR or edit this file.
