@@ -185,8 +185,17 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `corpus/out/` is git-ignored. Tests: `tests/test_pipeline.py` (PDF and HTML replay, locators, lint
     error and unverified fact in `review.json`, byte-identical reruns, token cap, bad requests, CLI).
     Follow-up: 26b is the first live use (needs the key, STATUS 8).
+27. `todo` `[safe]` **Ship the unmerged runs (D12).** PM check 2026-11-21: PR #22 (`dev` → `main`)
+    has been open since 2026-11-19, and `main` is still at `d43b351` (2026-11-18). CI passed on
+    `dev` head `8c56a3e` (run 44729408067). The 25b and 25c runs pushed but did not merge, and
+    STATUS gives no reason. At the start of the firing, confirm the PR head SHA equals local
+    `dev` and merge with a merge commit, per CLAUDE.md. If the merge is refused, record the exact
+    refusal under *Needs owner* in STATUS, as CLAUDE.md asks, instead of leaving it silent.
+    Then take the next item.
 11. `todo` **Verifier follow-ups.** Flag quotes that match on several pages, and
     check `Citation.locator` when present.
+    Moved up 2026-11-21: it tightens the D10 guard before the first live run (26b). HTML
+    pages (25b) rely on `locator`, so check it against the section heading too.
     Acceptance: tests in `tests/test_verify.py` for each, with D10 strictness kept.
 12. `todo` **Site: library index.** `concord site` accepts several specs and writes a
     top-level index of providers and strategies across specs. This builds on
