@@ -202,10 +202,29 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     free-form locator and ignores it. A quote that also appears on other pages still verifies but is
     listed as ambiguous (text and JSON `ambiguous`, `CitationResult.also_on`), never a failure (D10
     kept). Tests in `tests/test_verify.py`; the HTML test now cites real headings.
-12. `todo` **Site: library index.** `concord site` accepts several specs and writes a
-    top-level index of providers and strategies across specs. This builds on
-    item 6. The `--diff` part moved to item 23.
-    Acceptance: multi-spec test plus determinism test.
+12. `todo` **Site: library index (`concord library OUT_DIR SPEC...`).** Made concrete 2026-11-22.
+    This is the public library page for the Corpus phase (business plan §10.2), and the
+    one the converted specs (25c → `corpus/out/<id>/spec.json`) will feed. It needs no
+    API key.
+    Do this:
+    - `concord library OUT_DIR SPEC [SPEC ...]` takes FIXatdl or IR JSON files, and
+      `--from-corpus corpus/out` takes every `*/spec.json` there. It writes
+      `OUT_DIR/index.html` and calls the existing `render_site` for each spec into
+      `OUT_DIR/<provider-slug>/`, reusing item 6's slugging. Two specs from the same
+      provider get distinct slugs.
+    - The index has one table: provider, strategies (count), strategy identifier tag,
+      parameter count, *cited* facts as a share of all facts (the accuracy story,
+      shown as e.g. `42 / 45 cited`), and the lint error and warning counts when a
+      `review.json` sits next to the spec. Then comes a strategy finder: one row per
+      strategy across all specs (provider, strategy, wire value, link), sorted by
+      provider and then strategy name.
+    - Use the existing shared `style.css` (item 23): stdlib only, no JS, works from
+      `file://`, all text escaped.
+    Acceptance: a test with two specs (the fixture, plus a second synthetic IR with
+    citations built in the test) checks both rows, the cited counts, links that
+    resolve to written files, and escaping. Output is byte-identical across two
+    runs and independent of argument order. A `--from-corpus` test uses a temporary
+    directory with two `spec.json` files and one `review.json`.
 19. `todo` **Diff: citation (provenance) drift.** Report a fact whose citation
     page or quote changed while its value did not, as *cosmetic* with a
     `provenance` note, so reviewers see when a re-extraction moved evidence
