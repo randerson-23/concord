@@ -6,11 +6,11 @@
 
 ## Last run
 
-**2026-11-21 (daily firing) — verifier follow-ups (backlog 11, D26).** Worker added a locator check
-(a citation's locator must equal the heading of an HTML page it cites) and flags quotes that appear on
-several pages as a warning that never fails a citation. Backlog item 27 (merge PR #22) was not done:
-the Worker routine's prompt forbids merging without your direct word (Needs owner 9). Item 26b is
-still blocked on the API key (Needs owner 8). No new dependency.
+**2026-11-22 (daily firing) — spec library (backlog 12, D27).** Worker built `concord library OUT_DIR
+[SPEC ...] [--from-corpus DIR]`: a cross-spec index (providers with cited-fact share and lint/review
+counts, plus a strategy finder) with each spec's site underneath. `corpus convert` now also writes
+`lint.json`. PR #22 is still unmerged (Needs owner 9) and the API key is still not visible here
+(Needs owner 8). No new dependency.
 
 ## Needs owner
 

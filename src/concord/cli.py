@@ -22,6 +22,7 @@ from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
 from concord.fixdict import dictionary_path, load_dictionary
 from concord.html import read_html
 from concord.ir import AlgoSpec, SourceDocument
+from concord.library import entry_for, write_library
 from concord.lint import lint_spec
 from concord.orchestra import write_orchestra
 from concord.pdf import Page, read_pdf
@@ -152,6 +153,10 @@ def main(argv: list[str] | None = None) -> int:
     st.add_argument("spec")
     st.add_argument("out_dir")
     st.add_argument("--diff", metavar="OLD", help="previous version; adds a changes.html report")
+    lb = sub.add_parser("library", help="render many specs and a cross-spec index")
+    lb.add_argument("out_dir")
+    lb.add_argument("specs", nargs="*", help="FIXatdl or IR JSON files")
+    lb.add_argument("--from-corpus", metavar="DIR", help="also take every DIR/*/spec.json")
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
 
@@ -246,6 +251,14 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "site":
             old = _load(args.diff) if args.diff else None
             files = write_site(_load(args.spec), args.out_dir, old)
+            print(f"wrote {len(files)} files to {args.out_dir}")
+        elif args.cmd == "library":
+            paths = [*args.specs]
+            if args.from_corpus:
+                paths += [str(p) for p in sorted(Path(args.from_corpus).glob("*/spec.json"))]
+            if not paths:
+                raise ValueError("no specs: give SPEC files or --from-corpus DIR with */spec.json")
+            files = write_library([entry_for(_load(p), p) for p in paths], args.out_dir)
             print(f"wrote {len(files)} files to {args.out_dir}")
         elif args.cmd == "convert":
             spec = _load(args.file)

@@ -16,7 +16,7 @@ from concord.extract import ReplayBackend
 from concord.fixdict import DictionaryError
 from concord.pipeline import convert_source
 
-OUTPUTS = ["spec.json", "strategies.xml", "orchestra.xml", "review.json", "usage.json"]
+OUTPUTS = ["spec.json", "strategies.xml", "orchestra.xml", "review.json", "lint.json", "usage.json"]
 HTML_DOC = """<html><body><h1>Overview</h1><p>Acme TWAP spreads the order evenly.</p>
 <h2>Fields</h2><table><tr><th>Name</th><th>Tag</th></tr>
 <tr><td>ExDestination</td><td>100</td></tr></table></body></html>"""

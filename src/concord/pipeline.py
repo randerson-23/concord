@@ -3,8 +3,9 @@
 ``convert_source`` reads a document fetched by ``concord corpus fetch``, extracts an
 ``AlgoSpec`` (live or from recorded responses), verifies every citation, lints standard tags
 against the FIX dictionary, and writes ``corpus/out/<id>/``: ``spec.json``, ``strategies.xml``
-(FIXatdl), ``orchestra.xml``, ``site/``, ``review.json`` and ``usage.json``. The output is derived
-from a third-party document and stays git-ignored (hard rule 2). Same inputs, same bytes.
+(FIXatdl), ``orchestra.xml``, ``site/``, ``review.json``, ``lint.json`` and ``usage.json``. The
+output is derived from a third-party document and stays git-ignored (hard rule 2). Same inputs,
+same bytes.
 """
 
 from __future__ import annotations
@@ -113,6 +114,7 @@ def convert_source(
     _write(out / "strategies.xml", write_fixatdl(spec))
     _write(out / "orchestra.xml", write_orchestra(spec).xml)
     write_site(spec, out / "site")
+    _write(out / "lint.json", json.dumps([f.to_dict() for f in findings], indent=2) + "\n")
     _write(out / "review.json", json.dumps(review, indent=2) + "\n")
     _write(out / "usage.json", json.dumps(extraction.usage_dict(max_input_tokens), indent=2) + "\n")
     return ConvertResult(out, review, [f for f in findings if f.severity != "error"], extraction)

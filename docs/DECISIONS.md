@@ -285,3 +285,13 @@ section heading) and the citation gives one, they must agree after `fold`. Pages
 as "table 4.2" passes unchanged. A quote that also appears on other pages is still `verified` (D10:
 no new failure for a true quote) and is reported through `CitationResult.also_on` and
 `VerifyReport.ambiguous`, in text and in JSON under `ambiguous`; the extractor and `ok` ignore it.
+
+## D27 · 2026-11-22 · Library index: sidecar files, order-independent output
+
+`concord library` renders each spec with `render_site` under `<provider-slug>/` (own `style.css`, so
+every sub-site works alone) plus a top-level index. Entries are sorted by provider (case-insensitive)
+then canonical IR JSON before slugs are assigned (`acme`, `acme-2`), so output does not depend on
+argument order. "Cited" counts every fact that can carry a citation (strategies, parameters, enum
+values, edits) and shows `cited / total`. Lint and review figures come from `lint.json` and
+`review.json` beside the spec; `corpus convert` writes `lint.json` for this (warnings are not review
+items). A malformed sidecar is an error naming the file. No new dependency.

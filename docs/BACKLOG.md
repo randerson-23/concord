@@ -202,7 +202,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     free-form locator and ignores it. A quote that also appears on other pages still verifies but is
     listed as ambiguous (text and JSON `ambiguous`, `CitationResult.also_on`), never a failure (D10
     kept). Tests in `tests/test_verify.py`; the HTML test now cites real headings.
-12. `todo` **Site: library index (`concord library OUT_DIR SPEC...`).** Made concrete 2026-11-22.
+12. `done 2026-11-22` **Site: library index (`concord library OUT_DIR SPEC...`).** Made concrete 2026-11-22.
     This is the public library page for the Corpus phase (business plan §10.2), and the
     one the converted specs (25c → `corpus/out/<id>/spec.json`) will feed. It needs no
     API key.
@@ -225,6 +225,13 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     resolve to written files, and escaping. Output is byte-identical across two
     runs and independent of argument order. A `--from-corpus` test uses a temporary
     directory with two `spec.json` files and one `review.json`.
+    Done (decision D27): `concord library OUT_DIR [SPEC ...] [--from-corpus DIR]` and
+    `concord.library` (`render_library`, `write_library`, `entry_for`). `index.html` has a provider table
+    (strategies, identifier tag, parameters, `N / M cited`, lint errors, lint warnings, review items; `-`
+    when the sidecar file is absent) and a strategy finder sorted by provider then name; each spec's own
+    site sits under `<provider-slug>/`. `concord corpus convert` now also writes `lint.json` (all
+    findings) because `review.json` holds only lint errors. Tests: `tests/test_library.py` (counts,
+    escaping, links resolve, sidecars, slug clash, order independence, CLI incl. `--from-corpus`).
 19. `todo` **Diff: citation (provenance) drift.** Report a fact whose citation
     page or quote changed while its value did not, as *cosmetic* with a
     `provenance` note, so reviewers see when a re-extraction moved evidence
