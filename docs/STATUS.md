@@ -6,11 +6,11 @@
 
 ## Last run
 
-**2026-11-22 (daily firing) — spec library (backlog 12, D27).** Worker built `concord library OUT_DIR
-[SPEC ...] [--from-corpus DIR]`: a cross-spec index (providers with cited-fact share and lint/review
-counts, plus a strategy finder) with each spec's site underneath. `corpus convert` now also writes
-`lint.json`. PR #22 is still unmerged (Needs owner 9) and the API key is still not visible here
-(Needs owner 8). No new dependency.
+**2026-11-23 (daily firing) — MCP server (backlog 17a, D28).** Worker built `concord mcp`, a read-only
+stdio MCP server with `fix_field`, `lint_spec`, `diff_specs` and `describe_spec`, tested on handlers
+and over a real stdio session. New optional extra `mcp` (all transitive licences permissive, listed in
+D28); the core install is unchanged. PR #22 is still unmerged (Needs owner 9); the API key is still not
+visible here (Needs owner 8).
 
 ## Needs owner
 

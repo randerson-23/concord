@@ -232,7 +232,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     site sits under `<provider-slug>/`. `concord corpus convert` now also writes `lint.json` (all
     findings) because `review.json` holds only lint errors. Tests: `tests/test_library.py` (counts,
     escaping, links resolve, sidecars, slug clash, order independence, CLI incl. `--from-corpus`).
-17a. `todo` **MCP server, part 1: `concord mcp` (stdio) over what Concord already does.** Added
+17a. `done 2026-11-23` **MCP server, part 1: `concord mcp` (stdio) over what Concord already does.** Added
     2026-11-23. Phase A's key-free work is done except item 19, and live extraction waits on the
     owner (STATUS 8). The business plan's free tier (§6) is "better spec browser, parser, MCP
     server", and §8 says "publish, then converse". An MCP server lets an OMS engineer ask Claude
@@ -265,6 +265,11 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `describe_spec` shape. One smoke test starts `concord mcp` over stdio with the SDK client
     and lists the four tools, skipped when the `mcp` extra is not installed. Plain `uv run pytest`
     passes without the extra.
+    Done (decision D28): `concord mcp` (stdio) with `fix_field`, `lint_spec`, `diff_specs`,
+    `describe_spec`; handlers in `concord.mcp_tools` (no SDK), server in `concord.mcp_server`. Optional
+    extra `mcp` (`mcp>=1.2`, locked at 2.3.0). Tests: `tests/test_mcp.py` (each handler, error cases, an
+    SDK stdio smoke test skipped without the extra); `uv run pytest` passes with and without it. README
+    section added. Follow-up: 17b (public spec library lookups once `corpus convert` has real output).
 19. `todo` **Diff: citation (provenance) drift.** Report a fact whose citation
     page or quote changed while its value did not, as *cosmetic* with a
     `provenance` note, so reviewers see when a re-extraction moved evidence

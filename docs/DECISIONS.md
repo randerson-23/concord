@@ -295,3 +295,15 @@ argument order. "Cited" counts every fact that can carry a citation (strategies,
 values, edits) and shows `cited / total`. Lint and review figures come from `lint.json` and
 `review.json` beside the spec; `corpus convert` writes `lint.json` for this (warnings are not review
 items). A malformed sidecar is an error naming the file. No new dependency.
+
+## D28 · 2026-11-23 · MCP server: optional extra, 2.x SDK, tools return summary plus JSON
+
+`concord mcp` needs the `mcp` extra so the core stays dependency-light (as `llm`, D11). The extra is
+`mcp>=1.2`; the lock holds 2.3.0, whose server class is `mcp.server.mcpserver.MCPServer` (renamed from
+FastMCP). Licences of everything the extra adds, checked 2026-11-23: mcp, mcp-types, anyio, attrs,
+click, jsonschema, jsonschema-specifications, PyJWT, referencing, rpds-py, truststore: MIT/BSD;
+httpx2, httpcore2, h11, idna, pycparser, sse-starlette, starlette, uvicorn: BSD; cryptography:
+Apache-2.0 OR BSD-3-Clause; opentelemetry-api, python-multipart: Apache-2.0; cffi: MIT-0. None is
+GPL/AGPL/LGPL. Tool logic is plain functions in `concord.mcp_tools` returning `{summary, data}` or
+raising `ToolError`, so tests need no transport; the SDK file only registers them. Tools read only the
+paths the caller names (20 MB cap, existing hardened readers) and never write or fetch.

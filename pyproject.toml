@@ -17,6 +17,9 @@ concord = "concord.cli:main"
 
 [project.optional-dependencies]
 llm = ["anthropic>=0.40"]  # MIT; only needed for live extraction
+mcp = [
+    "mcp>=1.2",
+]
 
 [dependency-groups]
 dev = [

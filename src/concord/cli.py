@@ -157,6 +157,7 @@ def main(argv: list[str] | None = None) -> int:
     lb.add_argument("out_dir")
     lb.add_argument("specs", nargs="*", help="FIXatdl or IR JSON files")
     lb.add_argument("--from-corpus", metavar="DIR", help="also take every DIR/*/spec.json")
+    sub.add_parser("mcp", help="run a read-only MCP server on stdio (needs the mcp extra)")
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
 
@@ -252,6 +253,10 @@ def main(argv: list[str] | None = None) -> int:
             old = _load(args.diff) if args.diff else None
             files = write_site(_load(args.spec), args.out_dir, old)
             print(f"wrote {len(files)} files to {args.out_dir}")
+        elif args.cmd == "mcp":
+            from concord.mcp_server import serve
+
+            serve()
         elif args.cmd == "library":
             paths = [*args.specs]
             if args.from_corpus:
