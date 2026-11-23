@@ -232,6 +232,39 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     site sits under `<provider-slug>/`. `concord corpus convert` now also writes `lint.json` (all
     findings) because `review.json` holds only lint errors. Tests: `tests/test_library.py` (counts,
     escaping, links resolve, sidecars, slug clash, order independence, CLI incl. `--from-corpus`).
+17a. `todo` **MCP server, part 1: `concord mcp` (stdio) over what Concord already does.** Added
+    2026-11-23. Phase A's key-free work is done except item 19, and live extraction waits on the
+    owner (STATUS 8). The business plan's free tier (§6) is "better spec browser, parser, MCP
+    server", and §8 says "publish, then converse". An MCP server lets an OMS engineer ask Claude
+    "what is tag 849 in FIX 4.2?" or "what breaks if I move from v1 to v2 of this broker spec?"
+    and get Concord's deterministic answers. It needs no API key on our side.
+    Do this:
+    - Dependency: the official Python MCP SDK, PyPI `mcp` (MIT; 2.3.0, released 2026-10-02, is
+      old enough). Make it an **optional extra** `mcp`, the way `llm` is (D11), so the core has
+      no new dependency. Rule 5: check the license of every transitive dependency it pulls in
+      (httpx2, starlette, sse-starlette, pyjwt, opentelemetry-api, python-multipart and so on)
+      and list them in the commit message. Stop and record under *Needs owner* if any is
+      GPL/AGPL/LGPL.
+    - `concord mcp` runs a stdio server with four read-only tools. Each returns JSON plus a short
+      text summary:
+      - `fix_field(tag, fix_version="latest")`: name, type, code set values and
+        `unionDataType` from `concord.fixdict` (item 24). The dictionaries are fetched on demand
+        as today; if they are absent, return a clear error that says how to fetch them.
+      - `lint_spec(path, fix_version)`: `concord lint` findings.
+      - `diff_specs(old_path, new_path)`: `concord diff` JSON (D9).
+      - `describe_spec(path)`: strategies, parameters, tags and citations, as `concord inspect` but
+        structured.
+    - Untrusted input: paths are files the caller names. Read them with the existing readers
+      (XXE-safe). Never write files, never fetch the network except the existing dictionary
+      fetch, and return errors with locations, not stack traces.
+    - README section: how to add it to Claude Code (`claude mcp add concord -- uv run concord mcp`)
+      and to Claude Desktop config.
+    Acceptance: unit tests call each tool's handler function directly, with no MCP transport, on
+    the fixture and a synthetic v2 built in the test: field lookup through a tiny synthetic
+    dictionary (as item 24's tests do), a lint finding, a breaking diff, and the
+    `describe_spec` shape. One smoke test starts `concord mcp` over stdio with the SDK client
+    and lists the four tools, skipped when the `mcp` extra is not installed. Plain `uv run pytest`
+    passes without the extra.
 19. `todo` **Diff: citation (provenance) drift.** Report a fact whose citation
     page or quote changed while its value did not, as *cosmetic* with a
     `provenance` note, so reviewers see when a re-extraction moved evidence
