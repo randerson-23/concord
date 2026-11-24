@@ -273,8 +273,20 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
 19. `todo` **Diff: citation (provenance) drift.** Report a fact whose citation
     page or quote changed while its value did not, as *cosmetic* with a
     `provenance` note, so reviewers see when a re-extraction moved evidence
-    (item 1 follow-up). Acceptance: tests for a moved page and a changed quote;
-    text and JSON output both show it.
+    (item 1 follow-up). Sharpened 2026-11-24:
+    - Kind `provenance_changed`, severity *cosmetic*, with old and new `source:page`
+      and quote. Compare only citations whose `source_id` matches on both sides. Between
+      two different editions every page moves, so a changed source is not drift and is
+      not reported.
+    - **Opt-in** with `--provenance` (on `concord diff` and `diff_specs(...,
+      provenance=False)`), because between broker versions the noise would bury the
+      real changes. The use case is re-extracting the *same* PDF, e.g. after prompt
+      tuning (26b onwards), to see where evidence moved.
+    - Leave D9 classification unchanged. Without the flag the output is byte-identical
+      to today's.
+    Acceptance: tests for a moved page, a changed quote, a changed `source_id` (not
+    reported), and flag off (no change from current output). Text and JSON both show
+    it when on.
 
 ## Phase A — research `[safe]`
 
