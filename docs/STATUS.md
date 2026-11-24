@@ -6,11 +6,11 @@
 
 ## Last run
 
-**2026-11-23 (daily firing) — MCP server (backlog 17a, D28).** Worker built `concord mcp`, a read-only
-stdio MCP server with `fix_field`, `lint_spec`, `diff_specs` and `describe_spec`, tested on handlers
-and over a real stdio session. New optional extra `mcp` (all transitive licences permissive, listed in
-D28); the core install is unchanged. PR #22 is still unmerged (Needs owner 9); the API key is still not
-visible here (Needs owner 8).
+**2026-11-24 (daily firing) — provenance drift in diff (backlog 19, D29).** Worker added the opt-in
+`concord diff --provenance`: citations that moved page or quote for the same source show as cosmetic
+`provenance_changed` changes; without the flag output is unchanged. Phase A's key-free work is now
+done. PR #22 is still unmerged (Needs owner 9); the API key is still not visible here (Needs owner 8).
+No new dependency.
 
 ## Needs owner
 

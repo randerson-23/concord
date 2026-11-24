@@ -94,6 +94,11 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument(
         "--fail-on-breaking", action="store_true", help="exit 2 if any breaking change is found"
     )
+    d.add_argument(
+        "--provenance",
+        action="store_true",
+        help="also report citations that moved (page or quote) for the same source",
+    )
     v = sub.add_parser("verify", help="check every citation quote appears on its cited PDF page")
     v.add_argument("spec")
     v.add_argument(
@@ -167,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "inspect":
             print(_inspect(_load(args.file)))
         elif args.cmd == "diff":
-            report = diff_specs(_load(args.old), _load(args.new))
+            report = diff_specs(_load(args.old), _load(args.new), provenance=args.provenance)
             print(report.to_json() if args.format == "json" else report.to_text())
             if args.fail_on_breaking and report.has_breaking:
                 return 2

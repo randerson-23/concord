@@ -307,3 +307,14 @@ Apache-2.0 OR BSD-3-Clause; opentelemetry-api, python-multipart: Apache-2.0; cff
 GPL/AGPL/LGPL. Tool logic is plain functions in `concord.mcp_tools` returning `{summary, data}` or
 raising `ToolError`, so tests need no transport; the SDK file only registers them. Tools read only the
 paths the caller names (20 MB cap, existing hardened readers) and never write or fetch.
+
+## D29 · 2026-11-24 · Diff: provenance drift is opt-in and same-source only
+
+`concord diff --provenance` (and `diff_specs(..., provenance=True)`) adds cosmetic
+`provenance_changed` entries after the normal changes. For each fact present on both sides, citations
+are grouped by `source_id`; only a source named on both sides is compared, as sets of
+`source:page "quote"`, so two different editions never report drift (every page would move). Facts are
+matched like the main diff: strategies by name or unambiguous wire-value rename, parameters by name,
+enum values by wire value. Edits (matched only by position) and parameters renamed by tag are not
+covered. The value of the fact is not re-checked: any value change is already its own entry. D9
+severity rules are untouched, and without the flag output is byte-identical.

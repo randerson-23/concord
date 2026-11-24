@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal
 
-from concord.ir import AlgoSpec, Applicability, Parameter, Strategy
+from concord.ir import AlgoSpec, Applicability, Citation, Parameter, Strategy
 
 Severity = Literal["breaking", "additive", "cosmetic"]
 SEVERITIES: tuple[Severity, ...] = ("breaking", "additive", "cosmetic")
@@ -68,7 +68,13 @@ class DiffReport:
         return "\n".join(lines)
 
 
-def diff_specs(old: AlgoSpec, new: AlgoSpec) -> DiffReport:
+def diff_specs(old: AlgoSpec, new: AlgoSpec, *, provenance: bool = False) -> DiffReport:
+    """Classify every change from ``old`` to ``new``.
+
+    ``provenance=True`` adds cosmetic ``provenance_changed`` entries for facts present on both
+    sides whose citations to a source named on both sides moved (page or quote). It is off by
+    default: between two editions every page moves, so it is for re-extractions of one document.
+    """
     changes: list[Change] = []
 
     def add(sev: Severity, path: str, kind: str, msg: str, o: Any = None, n: Any = None) -> None:
@@ -134,7 +140,52 @@ def diff_specs(old: AlgoSpec, new: AlgoSpec) -> DiffReport:
     for name in sorted(old_s.keys() & new_s.keys()):
         _diff_strategy(old_s[name], new_s[name], add, scalar)
 
+    if provenance:
+        pairs = [(old_s[n], new_s[n]) for n in sorted(old_s.keys() & new_s.keys())]
+        pairs += [(old_s[o], new_s[n]) for o, n in sorted(renamed_s.items())]
+        _diff_provenance(pairs, add)
+
     return DiffReport(changes)
+
+
+def _cite_text(c: Citation) -> str:
+    where = c.source_id + (f":{c.page}" if c.page else "")
+    return f'{where} "{c.quote}"' if c.quote else where
+
+
+def _cite_drift(path: str, old: list[Citation], new: list[Citation], add) -> None:
+    """One change when the citations to a shared source differ between the two sides."""
+    for source in sorted({c.source_id for c in old} & {c.source_id for c in new}):
+        o = sorted({_cite_text(c) for c in old if c.source_id == source})
+        n = sorted({_cite_text(c) for c in new if c.source_id == source})
+        if o != n:
+            add(
+                "cosmetic",
+                path,
+                "provenance_changed",
+                f"provenance changed for source {source!r}",
+                "; ".join(o),
+                "; ".join(n),
+            )
+
+
+def _diff_provenance(pairs: list[tuple[Strategy, Strategy]], add) -> None:
+    for o, n in pairs:
+        spath = _spath(n.name)
+        _cite_drift(spath, o.citations, n.citations, add)
+        new_p = {p.name: p for p in n.parameters}
+        for op in o.parameters:
+            np_ = new_p.get(op.name)
+            if np_ is None:
+                continue
+            ppath = _ppath(n.name, op.name)
+            _cite_drift(ppath, op.citations, np_.citations, add)
+            new_e = {e.wire_value: e for e in np_.enum_values}
+            for oe in op.enum_values:
+                ne = new_e.get(oe.wire_value)
+                if ne is not None:
+                    epath = f"{ppath}/EnumValue[@wireValue='{oe.wire_value}']"
+                    _cite_drift(epath, oe.citations, ne.citations, add)
 
 
 def _diff_wire_contract(old: AlgoSpec, new: AlgoSpec, add) -> None:

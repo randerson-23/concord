@@ -270,7 +270,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     extra `mcp` (`mcp>=1.2`, locked at 2.3.0). Tests: `tests/test_mcp.py` (each handler, error cases, an
     SDK stdio smoke test skipped without the extra); `uv run pytest` passes with and without it. README
     section added. Follow-up: 17b (public spec library lookups once `corpus convert` has real output).
-19. `todo` **Diff: citation (provenance) drift.** Report a fact whose citation
+19. `done 2026-11-24` **Diff: citation (provenance) drift.** Report a fact whose citation
     page or quote changed while its value did not, as *cosmetic* with a
     `provenance` note, so reviewers see when a re-extraction moved evidence
     (item 1 follow-up). Sharpened 2026-11-24:
@@ -287,6 +287,11 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     Acceptance: tests for a moved page, a changed quote, a changed `source_id` (not
     reported), and flag off (no change from current output). Text and JSON both show
     it when on.
+    Done (decision D29): `diff_specs(old, new, provenance=False)` and `concord diff --provenance`. A
+    cosmetic `provenance_changed` change names the fact and shows old and new `source:page "quote"`,
+    for citations to a source present on both sides; flag off leaves output byte-identical. Facts
+    covered: strategies (including wire-value renames), parameters and enum values matched by name or
+    wire value. Not covered: edits and renamed parameters. Tests in `tests/test_diff.py`.
 
 ## Phase A — research `[safe]`
 

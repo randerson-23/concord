@@ -398,3 +398,69 @@ def test_shared_tag_does_not_cause_a_wrong_parameter_rename() -> None:
     kinds = _kinds(diff_specs(spec("B"), spec("C")))
     assert "parameter_renamed" not in kinds
     assert "parameter_removed" in kinds and "parameter_added" in kinds
+
+
+# --------------------------------------------------------------------------- provenance drift
+
+
+def _cited(page: int = 3, quote: str = "Style is Passive", source: str = "doc") -> AlgoSpec:
+    from concord.ir import Citation, SourceDocument
+
+    spec = base()
+    spec.sources = [
+        SourceDocument(id="doc", title="A", kind="pdf"),
+        SourceDocument(id="other", title="B", kind="pdf"),
+    ]
+    strategy = spec.strategies[0]
+    strategy.citations = [Citation(source_id=source, page=page, quote="VWAP slices")]
+    param = strategy.parameters[0]
+    param.citations = [Citation(source_id=source, page=page, quote=quote)]
+    if param.enum_values:
+        param.enum_values[0].citations = [Citation(source_id=source, page=page, quote="Passive")]
+    return spec
+
+
+def _prov(report) -> list:
+    return [c for c in report.changes if c.kind == "provenance_changed"]
+
+
+def test_provenance_flag_off_changes_nothing() -> None:
+    old, new = _cited(page=3), _cited(page=9, quote="another quote")
+    assert diff_specs(old, new).changes == []
+    assert diff_specs(old, new).to_json() == diff_specs(old, new, provenance=False).to_json()
+
+
+def test_moved_page_is_reported_as_cosmetic_provenance() -> None:
+    report = diff_specs(_cited(page=3), _cited(page=9), provenance=True)
+    changes = _prov(report)
+    assert changes and all(c.severity == "cosmetic" for c in changes)
+    param = next(c for c in changes if "/Parameter[" in c.path and "EnumValue" not in c.path)
+    assert param.old == 'doc:3 "Style is Passive"' and param.new == 'doc:9 "Style is Passive"'
+    assert not report.has_breaking
+
+
+def test_changed_quote_is_reported() -> None:
+    report = diff_specs(_cited(), _cited(quote="Style is Active"), provenance=True)
+    (change,) = _prov(report)
+    assert change.path == "Strategy[@name='VWAP']/Parameter[@name='Style']"
+    assert change.old.endswith('"Style is Passive"') and change.new.endswith('"Style is Active"')
+
+
+def test_changed_source_is_not_drift() -> None:
+    report = diff_specs(_cited(source="doc"), _cited(source="other"), provenance=True)
+    assert _prov(report) == []
+
+
+def test_same_citations_are_quiet_and_output_shows_in_text_and_json(capsys, tmp_path) -> None:
+    assert _prov(diff_specs(_cited(), _cited(), provenance=True)) == []
+    old, new = tmp_path / "old.json", tmp_path / "new.json"
+    old.write_text(_cited(page=3).model_dump_json(exclude_none=True))
+    new.write_text(_cited(page=9).model_dump_json(exclude_none=True))
+    assert main(["diff", str(old), str(new)]) == 0
+    assert "No differences." in capsys.readouterr().out
+    assert main(["diff", str(old), str(new), "--provenance"]) == 0
+    assert "provenance changed for source 'doc'" in capsys.readouterr().out
+    assert main(["diff", str(old), str(new), "--provenance", "--format", "json"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["summary"]["cosmetic"] >= 1
+    assert {c["kind"] for c in out["changes"]} == {"provenance_changed"}
