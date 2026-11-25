@@ -318,7 +318,41 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
 
 ## Phase B — product surface (after Phase A)
 
-16. `todo` Review UI: side-by-side PDF page and extracted rules, accept/fix.
+16a. `todo` **Review screen, part 1: `concord review OUT_DIR` writes a read-only review page.** Added
+    2026-11-25. Phase A's key-free work is done (item 19 was the last). Live extraction waits on the
+    owner (STATUS 8), and every converted spec will then put items on a review list. The business
+    plan says "uncertain output goes to review, never silently into the file", and accuracy is the
+    product (§6). The review screen is how a human clears that list, so build it before the first
+    live run produces one. It is also the most demoable thing left (the owner asked for a demo on
+    2026-11-08).
+    Do this:
+    - Input: a `corpus convert` output folder, `corpus/out/<id>/` (25c), holding `spec.json`,
+      `review.json` (the `ReviewItem` dicts plus lint entries) and `lint.json`, plus the
+      source document. Add a `source_path` field to `review.json` or `spec.json` if it is not
+      already recorded.
+    - Output: `OUT_DIR/review/index.html`, a static page with no JS that works from `file://`
+      and uses the shared `style.css` (item 23).
+      - At the top: counts by kind (`unverified`, `conflict`, lint `error` / `warning`).
+      - One card per item, side by side, stacking on narrow screens. On the left, the cited
+        page's text (page N or the HTML section `locator`), read with the same
+        `read_pdf`/`read_html` the verifier uses, with the quote highlighted (`<mark>`) where
+        D10 folding finds it. If it is not found, say "quote not found on page N" and show
+        the page. On the right, the fact (location `Strategy › Parameter`, the extracted
+        value), the kind, and the reason message.
+      - Escape every piece of document text, since it is untrusted.
+    - It is read-only here. Accept and fix come in 16b. Each card gets a stable `id` (a hash of
+      location, kind and page), so 16b can record decisions against it.
+    Acceptance: an end-to-end test on the synthetic replay folder the 25c tests produce, with one
+    unverified fact, one conflict and one lint error. Check the counts, one card each, the
+    `<mark>` around a found quote, the "not found" text for a fabricated quote, the escaping of a
+    `<script>` in page text, byte-identical output over two runs, and stable card ids.
+16b. `todo` **Review screen, part 2: accept / fix, recorded.** `concord review OUT_DIR --serve` runs a
+    local stdlib `http.server` on 127.0.0.1 only. Each card gets **Accept** (keep the fact, recorded
+    as human-verified, with reviewer and time) and **Reject** (drop it), with an optional corrected
+    value. Decisions go to `OUT_DIR/decisions.json`, keyed by card id. `corpus convert --apply-
+    decisions` rebuilds `spec.json`, FIXatdl, Orchestra and the site with them. A human-verified fact
+    carries a `Citation`-like record of the reviewer's decision, so it is never "uncited". Record the
+    model of human verification as a D-entry, which needs an IR field (additive, no version bump).
 17. `todo` MCP server: FIX repository lookups plus the public spec library.
 18. `todo` Hosted spec portal with change-watch alerts.
 
