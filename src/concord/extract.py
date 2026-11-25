@@ -198,14 +198,18 @@ class ReviewItem:
     location: str
     reason: str  # unverified | conflict | invalid_response
     detail: str
+    quotes: tuple[tuple[int | None, str], ...] = ()  # (page, quote) the model gave, for review
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "page": self.page,
             "location": self.location,
             "reason": self.reason,
             "detail": self.detail,
         }
+        if self.quotes:  # only when present, so older review files keep their shape
+            out["quotes"] = [{"page": p, "quote": q} for p, q in self.quotes]
+        return out
 
 
 @dataclass(frozen=True)
@@ -288,7 +292,8 @@ def _filter_fragment(
 
     def reject(loc: str, citations: list[Citation], what: str) -> None:
         quotes = "; ".join(f'p.{c.page} "{c.quote}"' for c in citations) or "no citations"
-        review.append(ReviewItem(page_no, loc, "unverified", f"{what}: {quotes}"))
+        given = tuple((c.page, c.quote) for c in citations if c.quote)
+        review.append(ReviewItem(page_no, loc, "unverified", f"{what}: {quotes}", given))
 
     out: list[Strategy] = []
     for s in frag.strategies:

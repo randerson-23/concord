@@ -318,7 +318,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
 
 ## Phase B — product surface (after Phase A)
 
-16a. `todo` **Review screen, part 1: `concord review OUT_DIR` writes a read-only review page.** Added
+16a. `done 2026-11-25` **Review screen, part 1: `concord review OUT_DIR` writes a read-only review page.** Added
     2026-11-25. Phase A's key-free work is done (item 19 was the last). Live extraction waits on the
     owner (STATUS 8), and every converted spec will then put items on a review list. The business
     plan says "uncertain output goes to review, never silently into the file", and accuracy is the
@@ -346,6 +346,15 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     unverified fact, one conflict and one lint error. Check the counts, one card each, the
     `<mark>` around a found quote, the "not found" text for a fabricated quote, the escaping of a
     `<script>` in page text, byte-identical output over two runs, and stable card ids.
+    Done (decision D30): `concord review OUT_DIR [--source PATH]` and `concord.review`
+    (`build_review`, `render_review`, `card_ids`) write `OUT_DIR/review/index.html` and `style.css`:
+    counts by kind, one card per item (cited page left with `<mark>` on the quote, fact and reason
+    right), lint warnings from `lint.json` as extra cards, stable card ids. `ReviewItem` gained
+    `quotes` (the model's page and quote, written to `review.json` only when present) and `corpus
+    convert` writes `source.json` (id, kind, path). Tests: `tests/test_review.py` (counts, `<mark>`,
+    not-found text, `<script>` escaping, byte-identical reruns, stable ids, CLI and `--source`).
+    Follow-up: 16b needs the card ids; quotes found only after hyphenation or typography folding are
+    reported but not marked.
 16b. `todo` **Review screen, part 2: accept / fix, recorded.** `concord review OUT_DIR --serve` runs a
     local stdlib `http.server` on 127.0.0.1 only. Each card gets **Accept** (keep the fact, recorded
     as human-verified, with reviewer and time) and **Reject** (drop it), with an optional corrected

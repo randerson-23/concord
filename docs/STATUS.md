@@ -6,11 +6,12 @@
 
 ## Last run
 
-**2026-11-24 (daily firing) — provenance drift in diff (backlog 19, D29).** Worker added the opt-in
-`concord diff --provenance`: citations that moved page or quote for the same source show as cosmetic
-`provenance_changed` changes; without the flag output is unchanged. Phase A's key-free work is now
-done. PR #22 is still unmerged (Needs owner 9); the API key is still not visible here (Needs owner 8).
-No new dependency.
+**2026-11-25 (daily firing) — review page (backlog 16a, D30).** Worker built `concord review OUT_DIR`:
+a static page for a `corpus convert` folder, one card per review item with the cited page, the quote
+highlighted where found (or "not found"), the fact and the reason, and stable card ids for the accept
+and fix step (16b). `review.json` items now carry the model's quotes and `convert` writes
+`source.json`. PR #22 is still unmerged (Needs owner 9); the API key is still not visible here
+(Needs owner 8). No new dependency.
 
 ## Needs owner
 

@@ -3,7 +3,8 @@
 ``convert_source`` reads a document fetched by ``concord corpus fetch``, extracts an
 ``AlgoSpec`` (live or from recorded responses), verifies every citation, lints standard tags
 against the FIX dictionary, and writes ``corpus/out/<id>/``: ``spec.json``, ``strategies.xml``
-(FIXatdl), ``orchestra.xml``, ``site/``, ``review.json``, ``lint.json`` and ``usage.json``. The
+(FIXatdl), ``orchestra.xml``, ``site/``, ``review.json``, ``lint.json``, ``source.json`` and
+``usage.json``. The
 output is derived from a third-party document and stays git-ignored (hard rule 2). Same inputs,
 same bytes.
 """
@@ -99,9 +100,15 @@ def convert_source(
     for r in verify_spec(spec, {source_id: pages}).failures:
         c = r.citation
         detail = f'{r.status.value} [{c.source_id} p.{c.page}] "{c.quote}"'
-        review.append(
-            {"page": c.page, "location": r.location, "reason": "verify_failed", "detail": detail}
-        )
+        item: dict[str, Any] = {
+            "page": c.page,
+            "location": r.location,
+            "reason": "verify_failed",
+            "detail": detail,
+        }
+        if c.quote:
+            item["quotes"] = [{"page": c.page, "quote": c.quote}]
+        review.append(item)
     findings = lint_spec(spec, wanted, latest)
     for f in findings:
         if f.severity == "error":
@@ -114,6 +121,8 @@ def convert_source(
     _write(out / "strategies.xml", write_fixatdl(spec))
     _write(out / "orchestra.xml", write_orchestra(spec).xml)
     write_site(spec, out / "site")
+    source_info = {"id": source_id, "kind": entry["kind"], "path": str(path)}
+    _write(out / "source.json", json.dumps(source_info, indent=2) + "\n")
     _write(out / "lint.json", json.dumps([f.to_dict() for f in findings], indent=2) + "\n")
     _write(out / "review.json", json.dumps(review, indent=2) + "\n")
     _write(out / "usage.json", json.dumps(extraction.usage_dict(max_input_tokens), indent=2) + "\n")

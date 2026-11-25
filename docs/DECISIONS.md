@@ -318,3 +318,16 @@ matched like the main diff: strategies by name or unambiguous wire-value rename,
 enum values by wire value. Edits (matched only by position) and parameters renamed by tag are not
 covered. The value of the fact is not re-checked: any value change is already its own entry. D9
 severity rules are untouched, and without the flag output is byte-identical.
+
+## D30 · 2026-11-25 · Review page: one card per review item, quotes carried on the item
+
+The review page reads a `corpus convert` folder only: `review.json` items, `lint.json` warnings
+(`lint_warning` cards), `spec.json` (to describe a fact that was kept) and the source document found
+through `source.json` or `--source`. `ReviewItem.quotes` records the (page, quote) pairs the model gave
+so the left pane can show the cited page without parsing `detail`; it is written to `review.json` only
+when non-empty. A quote is `<mark>`ed when it matches the page text exactly apart from whitespace;
+a quote that matches only after D10 folding (hyphenation, typography) is reported "found after
+normalising" and not marked, because folded positions do not map back to the original text; a quote
+that does not match even then is reported as not found on that page. Card id = first 12 hex of
+SHA-256 of `location|reason|page`, with `-2`, `-3` for repeats. No JS, all text escaped, no new
+dependency.
