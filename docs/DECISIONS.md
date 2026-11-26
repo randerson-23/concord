@@ -331,3 +331,18 @@ normalising" and not marked, because folded positions do not map back to the ori
 that does not match even then is reported as not found on that page. Card id = first 12 hex of
 SHA-256 of `location|reason|page`, with `-2`, `-3` for repeats. No JS, all text escaped, no new
 dependency.
+
+## D31 · 2026-11-26 · Human verification: a Review record on the fact
+
+IR: every cited fact (`Strategy`, `Parameter`, `EnumValue`, `StrategyEdit`) gains optional
+`review: Review` (`decision` accepted/rejected/corrected, `reviewer`, `at` date, `note`, `card_id`).
+Additive, so `IR_VERSION` stays 0.1. A reviewed fact (accepted or corrected) is shown as
+"human-verified" with reviewer and date on the site and counts as cited in the library; the citation
+verifier is unchanged (a Review never makes a quote verify). Decisions live in `decisions.json`
+beside the review list, keyed by card id (D30). `concord review OUT_DIR --apply-decisions` always starts
+from `spec.extracted.json` (a copy of the first `spec.json`), so it is idempotent and never calls a
+model; that is why it is a `review` option and not `corpus convert --apply-decisions`. Reject drops the
+fact; a correction replaces fields by name (never `citations` or `review`) and is re-validated;
+Accept on a fact the extractor already dropped is reported unapplied until 16c restores it. Lint
+warning cards never block (exit 2 only for open error/unverified/conflict cards or unapplied
+decisions). No new dependency.

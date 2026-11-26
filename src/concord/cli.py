@@ -16,6 +16,7 @@ from concord.corpus import (
     plan_sources,
     plan_text,
 )
+from concord.decisions import apply_to_folder
 from concord.diff import diff_specs
 from concord.extract import AnthropicBackend, RecordingBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
@@ -166,6 +167,11 @@ def main(argv: list[str] | None = None) -> int:
     rv = sub.add_parser("review", help="write a read-only review page for a corpus convert folder")
     rv.add_argument("out_dir", help="a corpus/out/<id> folder")
     rv.add_argument("--source", help="the source PDF or HTML (default: path in source.json)")
+    rv.add_argument(
+        "--apply-decisions",
+        action="store_true",
+        help="apply decisions.json to the spec and rewrite the outputs (no model call)",
+    )
     sub.add_parser("mcp", help="run a read-only MCP server on stdio (needs the mcp extra)")
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
@@ -263,8 +269,19 @@ def main(argv: list[str] | None = None) -> int:
             files = write_site(_load(args.spec), args.out_dir, old)
             print(f"wrote {len(files)} files to {args.out_dir}")
         elif args.cmd == "review":
-            files = build_review(args.out_dir, args.source)
-            print(f"wrote {len(files)} files to {Path(args.out_dir) / 'review'}")
+            if args.apply_decisions:
+                done = apply_to_folder(args.out_dir)
+                print(
+                    f"applied {len(done.applied)}, unapplied {len(done.unapplied)}, "
+                    f"open {len(done.open_cards)}"
+                )
+                for u in done.unapplied:
+                    print(f"  unapplied {u['card_id']} {u['location']}: {u['reason']}")
+                if not done.resolved:
+                    return 2
+            else:
+                files = build_review(args.out_dir, args.source)
+                print(f"wrote {len(files)} files to {Path(args.out_dir) / 'review'}")
         elif args.cmd == "mcp":
             from concord.mcp_server import serve
 

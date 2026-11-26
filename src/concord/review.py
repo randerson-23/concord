@@ -173,9 +173,8 @@ def render_review(
     return {"index.html": page, "style.css": STYLE_CSS + REVIEW_CSS}
 
 
-def build_review(out_dir: str | Path, source: str | Path | None = None) -> list[Path]:
-    """Write ``OUT_DIR/review/``; returns the files written."""
-    root = Path(out_dir)
+def load_items(root: Path) -> list[dict[str, Any]]:
+    """The review list of a convert folder: ``review.json`` plus lint warnings as items."""
     items = list(_read_json(root / "review.json", "review.json"))
     lint = root / "lint.json"
     if lint.is_file():
@@ -189,6 +188,13 @@ def build_review(out_dir: str | Path, source: str | Path | None = None) -> list[
                         "detail": f.get("message", ""),
                     }
                 )
+    return items
+
+
+def build_review(out_dir: str | Path, source: str | Path | None = None) -> list[Path]:
+    """Write ``OUT_DIR/review/``; returns the files written."""
+    root = Path(out_dir)
+    items = load_items(root)
     spec_file = root / "spec.json"
     spec = AlgoSpec.model_validate_json(spec_file.read_text()) if spec_file.is_file() else None
     pages = None

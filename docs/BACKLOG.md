@@ -355,7 +355,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     not-found text, `<script>` escaping, byte-identical reruns, stable ids, CLI and `--source`).
     Follow-up: 16b needs the card ids; quotes found only after hyphenation or typography folding are
     reported but not marked.
-16b. `todo` **Review screen, part 2: accept / fix, recorded.** `concord review OUT_DIR --serve` runs a
+16b. `done 2026-11-26` (first half; server is 16c) **Review screen, part 2: accept / fix, recorded.** `concord review OUT_DIR --serve` runs a
     local stdlib `http.server` on 127.0.0.1 only. Each card gets **Accept** (keep the fact, recorded
     as human-verified, with reviewer and time) and **Reject** (drop it), with an optional corrected
     value. Decisions go to `OUT_DIR/decisions.json`, keyed by card id. `corpus convert --apply-
@@ -377,6 +377,23 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `--apply-decisions` changes `spec.json` and drops a rejected fact, and that output is
     byte-identical over two applies. One smoke test runs the real server on an ephemeral
     port and makes one POST.
+    Done (decision D31): IR `Review` on every fact (`decision`, `reviewer`, `at`, `note`, `card_id`;
+    additive, no version bump); `concord.decisions` and `concord review OUT_DIR --apply-decisions`
+    (exit 2 while cards are open or unapplied) apply `decisions.json` (accept, reject, correct with
+    `corrections`) from `spec.extracted.json`, so reapplying is idempotent, and rewrite `spec.json`,
+    `strategies.xml`, `orchestra.xml`, `site/` and `applied.json`. A reviewed fact shows
+    "human-verified" on the site and counts as cited in the library. It is `review --apply-decisions`,
+    not `corpus convert --apply-decisions` as first written: applying must not re-run extraction (a
+    live model call that could change card ids). Tests: `tests/test_decisions.py`.
+16c. `todo` **Review screen, part 3: the local server, and restoring dropped facts.**
+    - `concord review OUT_DIR --serve`: stdlib `http.server` on 127.0.0.1 only, a random token printed
+      in the URL and required on every POST, nothing served outside `OUT_DIR`, atomic writes to
+      `decisions.json` (stamp `at` and take `reviewer` from a field), plain `<form method=post>` per
+      card, Ctrl-C to stop. Handler tested directly (no sockets): accept, reject, correct, bad token
+      403, path traversal 404; one smoke test on an ephemeral port with one POST.
+    - Today an `unverified` card is a fact the extractor already dropped, so Accept on it is
+      "unapplied". Have `ReviewItem` carry the dropped fact's JSON so Accept can restore it (merge into
+      the spec at its location, with the Review recorded). Test: accept restores, reject stays dropped.
 17. `todo` MCP server: FIX repository lookups plus the public spec library.
 18. `todo` Hosted spec portal with change-watch alerts.
 

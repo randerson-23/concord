@@ -54,15 +54,16 @@ def entry_for(spec: AlgoSpec, spec_path: str | Path | None = None) -> LibraryEnt
 
 
 def fact_counts(spec: AlgoSpec) -> tuple[int, int]:
-    """(cited, total) over every fact that can carry a citation."""
+    """(cited, total) over every fact that can carry a citation or a human review."""
     cited = total = 0
     for s in spec.strategies:
-        facts = [s.citations, *(e.citations for e in s.edits)]
+        nodes = [s, *s.edits]
         for p in s.parameters:
-            facts.append(p.citations)
-            facts.extend(v.citations for v in p.enum_values)
-        total += len(facts)
-        cited += sum(1 for c in facts if c)
+            nodes.append(p)
+            nodes.extend(p.enum_values)
+        total += len(nodes)
+        # a human-verified fact counts as cited (D31)
+        cited += sum(1 for n in nodes if n.citations or n.review is not None)
     return cited, total
 
 

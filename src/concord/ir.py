@@ -128,8 +128,21 @@ class Citation(_Model):
     )
 
 
+class Review(_Model):
+    """A human decision about a fact (D31). Recorded on the fact, so it is never merely uncited."""
+
+    decision: Literal["accepted", "rejected", "corrected"]
+    reviewer: str
+    at: date = Field(description="Day the decision was made.")
+    note: str | None = None
+    card_id: str | None = Field(default=None, description="Review card the decision answered.")
+
+
 class _Cited(_Model):
     citations: list[Citation] = Field(default_factory=list)
+    review: Review | None = Field(
+        default=None, description="Human decision about this fact, when one was made."
+    )
 
 
 # --------------------------------------------------------------------------- parameters

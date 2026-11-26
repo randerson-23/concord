@@ -6,12 +6,12 @@
 
 ## Last run
 
-**2026-11-25 (daily firing) — review page (backlog 16a, D30).** Worker built `concord review OUT_DIR`:
-a static page for a `corpus convert` folder, one card per review item with the cited page, the quote
-highlighted where found (or "not found"), the fact and the reason, and stable card ids for the accept
-and fix step (16b). `review.json` items now carry the model's quotes and `convert` writes
-`source.json`. PR #22 is still unmerged (Needs owner 9); the API key is still not visible here
-(Needs owner 8). No new dependency.
+**2026-11-26 (daily firing) — human decisions on review cards (backlog 16b first half, D31).** Worker
+added an IR `Review` record and `concord review OUT_DIR --apply-decisions`: accept, reject and correct
+decisions from `decisions.json` rebuild `spec.json`, FIXatdl, Orchestra and the site; reviewed facts show
+"human-verified" and count as cited. The local server and restoring dropped facts are the new item 16c.
+PR #22 is still unmerged (Needs owner 9); the API key is still not visible here (Needs owner 8). No new
+dependency.
 
 ## Needs owner
 
