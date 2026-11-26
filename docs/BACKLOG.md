@@ -362,6 +362,21 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     decisions` rebuilds `spec.json`, FIXatdl, Orchestra and the site with them. A human-verified fact
     carries a `Citation`-like record of the reviewer's decision, so it is never "uncited". Record the
     model of human verification as a D-entry, which needs an IR field (additive, no version bump).
+    Sharpened 2026-11-26:
+    - IR: add a `review: Review | None` field to facts, with fields `decision` (accepted/
+      rejected/corrected), `reviewer`, `at` (ISO date), `note` and `card_id`. A fact with
+      an accepted review counts as cited on the site and in the library, with a visible
+      "human-verified" label and no "uncited" marker.
+    - Server safety: bind to 127.0.0.1 only. Create a random token at start-up, print it
+      in the URL, and require it on every POST. Allow no path outside `OUT_DIR`. Decision
+      writes are atomic (write a temp file, then rename). Stop with Ctrl-C.
+    - The HTML is still no-JS-required: plain `<form method=post>` per card, so it also
+      works in a phone browser over an SSH tunnel.
+    Acceptance: the handler is tested directly (no sockets) for accept, reject and correct.
+    Test that a bad token returns 403 and a path-traversal attempt returns 404, that
+    `--apply-decisions` changes `spec.json` and drops a rejected fact, and that output is
+    byte-identical over two applies. One smoke test runs the real server on an ephemeral
+    port and makes one POST.
 17. `todo` MCP server: FIX repository lookups plus the public spec library.
 18. `todo` Hosted spec portal with change-watch alerts.
 
