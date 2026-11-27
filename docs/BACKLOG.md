@@ -385,15 +385,33 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     "human-verified" on the site and counts as cited in the library. It is `review --apply-decisions`,
     not `corpus convert --apply-decisions` as first written: applying must not re-run extraction (a
     live model call that could change card ids). Tests: `tests/test_decisions.py`.
-16c. `todo` **Review screen, part 3: the local server, and restoring dropped facts.**
-    - `concord review OUT_DIR --serve`: stdlib `http.server` on 127.0.0.1 only, a random token printed
-      in the URL and required on every POST, nothing served outside `OUT_DIR`, atomic writes to
-      `decisions.json` (stamp `at` and take `reviewer` from a field), plain `<form method=post>` per
-      card, Ctrl-C to stop. Handler tested directly (no sockets): accept, reject, correct, bad token
-      403, path traversal 404; one smoke test on an ephemeral port with one POST.
-    - Today an `unverified` card is a fact the extractor already dropped, so Accept on it is
-      "unapplied". Have `ReviewItem` carry the dropped fact's JSON so Accept can restore it (merge into
-      the spec at its location, with the Review recorded). Test: accept restores, reject stays dropped.
+16c. `todo` **Review screen, part 3: Accept restores a dropped fact.** (Split 2026-11-27: restore
+    first, because without it Accept on an `unverified` card does nothing, and that is the commonest
+    card a live run will produce. The server is now 16d.)
+    - `extract._filter_fragment` drops the fact in `reject()` and keeps only its quotes. Add an
+      optional `fact` field to `ReviewItem` holding the dropped fact's IR JSON (the Strategy,
+      Parameter or EnumPair dict as `ir` serialises it), written to `review.json` only when present
+      so older files keep their shape (same pattern as `quotes`).
+    - In `concord.decisions`, Accept or Correct on a card whose fact is absent restores it from
+      `fact`: insert at its location (Parameter under its Strategy, EnumPair under its Parameter;
+      a whole Strategy appended), record the `Review`, and keep the order deterministic (append at
+      the end of the parent's list). If the parent is itself absent, leave the card unapplied with
+      a reason naming the missing parent. Reject keeps the fact dropped. Cards with no `fact`
+      (older review files) stay unapplied with today's message.
+    - The restored fact's failed citations stay stripped; it counts as cited only through its
+      `Review` (D31), so the site shows "human-verified", not a quote it could not find.
+    Acceptance: synthetic fixture with one dropped Parameter and one dropped EnumPair. Accept
+    restores each at the right place in `spec.json`, `strategies.xml` and `orchestra.xml`; Reject
+    leaves them out; Correct restores with the corrected value; a dropped Parameter whose Strategy is
+    also dropped stays unapplied with a clear reason; two applies give byte-identical output; an old
+    `review.json` without `fact` still loads. No new dependency.
+16d. `todo` **Review screen, part 4: the local server.** `concord review OUT_DIR --serve`: stdlib
+    `http.server` on 127.0.0.1 only, a random token printed in the URL and required on every POST,
+    nothing served outside `OUT_DIR`, atomic writes to `decisions.json` (stamp `at`, take `reviewer`
+    from a form field), plain `<form method=post>` per card (Accept, Reject, Correct with a value
+    box), a "rebuild" button that runs `--apply-decisions`, Ctrl-C to stop. Handler tested directly
+    (no sockets): accept, reject, correct, bad token 403, path traversal 404; one smoke test on an
+    ephemeral port with one POST.
 17. `todo` MCP server: FIX repository lookups plus the public spec library.
 18. `todo` Hosted spec portal with change-watch alerts.
 
