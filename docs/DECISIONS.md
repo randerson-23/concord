@@ -346,3 +346,17 @@ fact; a correction replaces fields by name (never `citations` or `review`) and i
 Accept on a fact the extractor already dropped is reported unapplied until 16c restores it. Lint
 warning cards never block (exit 2 only for open error/unverified/conflict cards or unapplied
 decisions). No new dependency.
+
+## D32 · 2026-11-27 · Restoring a dropped fact from its review card
+
+A card for a fact the extractor dropped carries that fact as IR JSON in `ReviewItem.fact`, with all
+`citations` removed: the citations did not verify, so the restored fact counts as cited only through
+its `Review` (D31). It is stored only when present, so older `review.json` files load unchanged (their
+Accept stays unapplied, with a message saying the file does not carry the fact). Accept or Correct
+inserts the fact at the end of its parent's list (Strategy at the end of the strategies, Parameter
+under its Strategy, EnumValue under its Parameter, StrategyEdit under its Strategy), which keeps the
+result deterministic; a correction overlays fields by name before validation. A dropped Strategy's JSON
+includes its original parameters, so restoring it restores them (uncited), and their own cards then
+find them present. Decisions are applied in order of depth, parents first, so a restored Strategy
+exists when its Parameter card is applied. If the parent is still absent the card is unapplied with
+the parent named. No new dependency.

@@ -385,7 +385,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     "human-verified" on the site and counts as cited in the library. It is `review --apply-decisions`,
     not `corpus convert --apply-decisions` as first written: applying must not re-run extraction (a
     live model call that could change card ids). Tests: `tests/test_decisions.py`.
-16c. `todo` **Review screen, part 3: Accept restores a dropped fact.** (Split 2026-11-27: restore
+16c. `done 2026-11-27` **Review screen, part 3: Accept restores a dropped fact.** (Split 2026-11-27: restore
     first, because without it Accept on an `unverified` card does nothing, and that is the commonest
     card a live run will produce. The server is now 16d.)
     - `extract._filter_fragment` drops the fact in `reject()` and keeps only its quotes. Add an
@@ -405,6 +405,15 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     leaves them out; Correct restores with the corrected value; a dropped Parameter whose Strategy is
     also dropped stays unapplied with a clear reason; two applies give byte-identical output; an old
     `review.json` without `fact` still loads. No new dependency.
+    Done (decision D32): `ReviewItem.fact` holds a dropped Strategy, Parameter, EnumValue or
+    StrategyEdit as IR JSON with every `citations` list removed (written to `review.json` only when
+    present). In `concord.decisions`, Accept or Correct on a card whose fact is absent restores it at
+    the end of its parent's list and records the `Review`; Reject keeps it dropped; a missing parent
+    is named in the unapplied reason; an older `review.json` without `fact` keeps the old message.
+    Decisions apply parents before children (stable by review order). Tests in
+    `tests/test_decisions.py`: extraction stores the fact, Accept and Correct restore in place, Reject,
+    missing parent, an invalid correction, and restored facts in `spec.json`, `strategies.xml`,
+    `orchestra.xml` and the site, byte-identical over two applies.
 16d. `todo` **Review screen, part 4: the local server.** `concord review OUT_DIR --serve`: stdlib
     `http.server` on 127.0.0.1 only, a random token printed in the URL and required on every POST,
     nothing served outside `OUT_DIR`, atomic writes to `decisions.json` (stamp `at`, take `reviewer`

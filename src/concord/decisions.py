@@ -26,13 +26,14 @@ from typing import Any
 from pydantic import ValidationError
 
 from concord.fixatdl import write_fixatdl
-from concord.ir import AlgoSpec, EnumValue, Parameter, Review, Strategy
+from concord.ir import AlgoSpec, EnumValue, Parameter, Review, Strategy, StrategyEdit
 from concord.orchestra import write_orchestra
 from concord.review import card_ids, load_items
 from concord.site import write_site
 
 DECISIONS = ("accept", "reject", "correct")
 _SEG = re.compile(r"(Strategy|Parameter|EnumValue)\[@(?:name|wireValue)='([^']*)'\]")
+_EDIT = re.compile(r"/StrategyEdit\[\d+\]$")
 _PROTECTED = {"citations", "review"}  # a correction never rewrites provenance
 
 
@@ -100,8 +101,45 @@ def _find(spec: AlgoSpec, location: str) -> tuple[Strategy, Parameter | None, En
     return strategy, param, enum
 
 
+def _restore(out: AlgoSpec, location: str, fact: dict[str, Any]) -> Any:
+    """Insert a dropped fact (IR JSON) at the end of its parent's list and return it."""
+    edit = _EDIT.search(location)
+    segs = _SEG.findall(location[: edit.start()] if edit else location)
+    if not segs or segs[0][0] != "Strategy":
+        raise LookupError("not a fact that can be restored")
+    sname = segs[0][1]
+    strategy = next((s for s in out.strategies if s.name == sname), None)
+    if len(segs) == 1 and not edit:
+        new = Strategy.model_validate(fact)
+        out.strategies.append(new)
+        return new
+    if strategy is None:
+        raise LookupError(f"parent Strategy[@name='{sname}'] is also dropped; restore it first")
+    if edit:
+        new_edit = StrategyEdit.model_validate(fact)
+        strategy.edits.append(new_edit)
+        return new_edit
+    if segs[1][0] != "Parameter":
+        raise LookupError("not a fact that can be restored")
+    pname = segs[1][1]
+    param = next((p for p in strategy.parameters if p.name == pname), None)
+    if len(segs) == 2:
+        new_param = Parameter.model_validate(fact)
+        strategy.parameters.append(new_param)
+        return new_param
+    if param is None:
+        raise LookupError(f"parent Parameter[@name='{pname}'] is also dropped; restore it first")
+    new_enum = EnumValue.model_validate(fact)
+    param.enum_values.append(new_enum)
+    return new_enum
+
+
 def _replace(items: list[Any], old: Any, new: Any) -> None:
     items[next(i for i, x in enumerate(items) if x is old)] = new
+
+
+def _depth(location: str) -> int:
+    return len(_SEG.findall(location)) + (1 if _EDIT.search(location) else 0)
 
 
 def apply_decisions(
@@ -114,7 +152,8 @@ def apply_decisions(
     by_id = dict(zip(ids, items, strict=True))
     for cid in sorted(set(decisions) - set(by_id)):
         result.unapplied.append({"card_id": cid, "location": "", "reason": "unknown card id"})
-    for cid in ids:
+    # Parents before children, so a restored Strategy exists when its Parameter is restored.
+    for cid in sorted(ids, key=lambda c: _depth(by_id[c].get("location", ""))):
         d = decisions.get(cid)
         loc = by_id[cid].get("location", "")
         if d is None:
@@ -153,9 +192,29 @@ def apply_decisions(
         except Absent as exc:
             if d["decision"] == "reject":  # nothing to drop: the fact is already absent
                 result.applied.append({"card_id": cid, "decision": "reject", "location": loc})
-            else:
-                reason = f"{exc}; restoring a dropped fact is not supported yet"
+                continue
+            fact = by_id[cid].get("fact")
+            if not isinstance(fact, dict):
+                reason = f"{exc}; this review file does not carry the dropped fact"
                 result.unapplied.append({"card_id": cid, "location": loc, "reason": reason})
+                continue
+            try:
+                restored = _restore(out, loc, {**fact, **(d.get("corrections") or {})})
+            except LookupError as inner:
+                result.unapplied.append({"card_id": cid, "location": loc, "reason": str(inner)})
+                continue
+            except (ValidationError, ValueError) as inner:
+                reason = f"restore rejected: {str(inner).splitlines()[0]}"
+                result.unapplied.append({"card_id": cid, "location": loc, "reason": reason})
+                continue
+            restored.review = Review(
+                decision="accepted" if d["decision"] == "accept" else "corrected",
+                reviewer=d["reviewer"],
+                at=date.fromisoformat(str(d["at"])),
+                note=d.get("note"),
+                card_id=cid,
+            )
+            result.applied.append({"card_id": cid, "decision": d["decision"], "location": loc})
             continue
         except LookupError as exc:
             result.unapplied.append({"card_id": cid, "location": loc, "reason": str(exc)})

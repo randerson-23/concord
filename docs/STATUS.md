@@ -6,12 +6,11 @@
 
 ## Last run
 
-**2026-11-26 (daily firing) — human decisions on review cards (backlog 16b first half, D31).** Worker
-added an IR `Review` record and `concord review OUT_DIR --apply-decisions`: accept, reject and correct
-decisions from `decisions.json` rebuild `spec.json`, FIXatdl, Orchestra and the site; reviewed facts show
-"human-verified" and count as cited. The local server and restoring dropped facts are the new item 16c.
-PR #22 is still unmerged (Needs owner 9); the API key is still not visible here (Needs owner 8). No new
-dependency.
+**2026-11-27 (daily firing) — Accept restores a dropped fact (backlog 16c, D32).** Worker made review
+cards for facts the extractor dropped carry the fact itself, so Accept or Correct in `decisions.json`
+now restores it (as a human-verified fact) and Reject keeps it out; older review files still load.
+Only the local server (16d) is left of the review screen. PR #22 is still unmerged (Needs owner 9);
+the API key is still not visible here (Needs owner 8). No new dependency.
 
 ## Needs owner
 
