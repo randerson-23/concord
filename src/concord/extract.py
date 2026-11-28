@@ -198,14 +198,21 @@ class ReviewItem:
     location: str
     reason: str  # unverified | conflict | invalid_response
     detail: str
+    quotes: tuple[tuple[int | None, str], ...] = ()  # (page, quote) the model gave, for review
+    fact: dict[str, Any] | None = None  # the dropped fact as IR JSON, so Accept can restore it
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "page": self.page,
             "location": self.location,
             "reason": self.reason,
             "detail": self.detail,
         }
+        if self.quotes:  # only when present, so older review files keep their shape
+            out["quotes"] = [{"page": p, "quote": q} for p, q in self.quotes]
+        if self.fact is not None:
+            out["fact"] = self.fact
+        return out
 
 
 @dataclass(frozen=True)
@@ -258,10 +265,13 @@ class ExtractionResult:
 
 
 def build_prompt(source: SourceDocument, page: Page) -> str:
+    where = f'section "{page.locator}"' if page.locator else f"page {page.number}"
     return (
         f"PAGE {page.number}\n"
         f"source_id: {source.id}  (title: {source.title})\n"
-        f"Extract from page {page.number} only. Cite page={page.number}.\n"
+        f"Extract from {where} only. Cite page={page.number}"
+        + (f' and locator="{page.locator}"' if page.locator else "")
+        + ".\n"
         f"--- page text ---\n{page.text}\n--- layout text ---\n{page.layout_text}\n"
     )
 
@@ -278,14 +288,25 @@ def _good(cites: list[Citation], pages: Sequence[Page], source_id: str) -> list[
     ]
 
 
+def _strip_citations(node: Any) -> Any:
+    """Remove every ``citations`` list from IR JSON: a dropped fact's citations did not verify."""
+    if isinstance(node, dict):
+        return {k: _strip_citations(v) for k, v in node.items() if k != "citations"}
+    if isinstance(node, list):
+        return [_strip_citations(v) for v in node]
+    return node
+
+
 def _filter_fragment(
     frag: Fragment, pages: Sequence[Page], source_id: str, page_no: int, review: list[ReviewItem]
 ) -> list[Strategy]:
     """Drop facts without a verified citation (recording them); strip failed citations."""
 
-    def reject(loc: str, citations: list[Citation], what: str) -> None:
+    def reject(loc: str, citations: list[Citation], what: str, fact: Any) -> None:
         quotes = "; ".join(f'p.{c.page} "{c.quote}"' for c in citations) or "no citations"
-        review.append(ReviewItem(page_no, loc, "unverified", f"{what}: {quotes}"))
+        given = tuple((c.page, c.quote) for c in citations if c.quote)
+        dump = _strip_citations(json.loads(fact.model_dump_json(exclude_none=True)))
+        review.append(ReviewItem(page_no, loc, "unverified", f"{what}: {quotes}", given, dump))
 
     out: list[Strategy] = []
     for s in frag.strategies:
@@ -299,22 +320,22 @@ def _filter_fragment(
                 if good:
                     enums.append(e.model_copy(update={"citations": good}))
                 else:
-                    reject(f"{ploc}/EnumValue[@wireValue='{e.wire_value}']", e.citations, "enum")
+                    reject(f"{ploc}/EnumValue[@wireValue='{e.wire_value}']", e.citations, "enum", e)
             good = _good(p.citations, pages, source_id)
             if good:
                 params.append(p.model_copy(update={"citations": good, "enum_values": enums}))
             else:
-                reject(ploc, p.citations, "parameter")
+                reject(ploc, p.citations, "parameter", p)
         edits: list[StrategyEdit] = []
         for i, se in enumerate(s.edits, start=1):
             good = _good(se.citations, pages, source_id)
             if good:
                 edits.append(se.model_copy(update={"citations": good}))
             else:
-                reject(f"{sloc}/StrategyEdit[{i}]", se.citations, "rule")
+                reject(f"{sloc}/StrategyEdit[{i}]", se.citations, "rule", se)
         good = _good(s.citations, pages, source_id)
         if not good and not params and not edits:
-            reject(sloc, s.citations, "strategy")
+            reject(sloc, s.citations, "strategy", s)
             continue
         out.append(
             s.model_copy(

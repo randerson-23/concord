@@ -13,7 +13,7 @@ from html import escape
 from pathlib import Path
 
 from concord.diff import SEVERITIES, Change, DiffReport, diff_specs
-from concord.ir import AlgoSpec, Citation, Edit, Parameter, Strategy
+from concord.ir import AlgoSpec, Citation, Edit, Parameter, Review, Strategy
 
 STYLE_CSS = """\
 :root{--bg:#fff;--fg:#1a1a1a;--line:#ccc;--head:#f3f3f3;--code:#f3f3f3;--badge:#eee;--warn:#a40;
@@ -30,6 +30,7 @@ th{background:var(--head)}
 code{background:var(--code);padding:0 .2rem}
 .cite{font-size:.85em;margin-left:.3rem}
 .uncited{font-size:.85em;margin-left:.3rem;color:var(--warn);font-weight:600}
+.human{font-size:.85em;margin-left:.3rem;color:var(--additive);font-weight:600}
 .badge{font-size:.8em;background:var(--badge);border-radius:3px;padding:0 .3rem}
 .sev{font-size:.8em;font-weight:700;letter-spacing:.04em;border:1px solid currentColor;
 border-radius:3px;padding:0 .35rem;margin-right:.4rem}
@@ -96,7 +97,14 @@ class _Renderer:
 
     # -- fragments
 
-    def cites(self, citations: list[Citation]) -> str:
+    def cites(self, citations: list[Citation], review: Review | None = None) -> str:
+        if review is not None and review.decision != "rejected":
+            who = escape(f"{review.reviewer}, {review.at.isoformat()}")
+            label = f'<span class="human" title="{who}">human-verified</span>'
+            return f"{self._cites(citations)} {label}" if citations else label
+        return self._cites(citations)
+
+    def _cites(self, citations: list[Citation]) -> str:
         if not citations:
             return '<span class="uncited">uncited</span>'
         parts = []
@@ -182,7 +190,7 @@ class _Renderer:
     def param_row(self, p: Parameter) -> str:
         enums = "<br>".join(
             f"<code>{escape(e.wire_value)}</code> — {escape(e.label or '')}"
-            f"{self.cites(e.citations)}"
+            f"{self.cites(e.citations, e.review)}"
             for e in p.enum_values
         )
         rng = ""
@@ -198,7 +206,7 @@ class _Renderer:
             else ""
         )
         cells = [
-            f"{escape(p.name)}{flag}{desc}{self.cites(p.citations)}",
+            f"{escape(p.name)}{flag}{desc}{self.cites(p.citations, p.review)}",
             str(p.fix_tag) if p.fix_tag else "",
             escape(p.type.value),
             "yes" if p.required else "no",
@@ -214,7 +222,7 @@ class _Renderer:
         h.append(
             f"<p>Name <code>{escape(s.name)}</code>, wire value "
             f"<code>{escape(s.wire_value)}</code>, version {escape(s.version)}"
-            f"{self.cites(s.citations)}</p>"
+            f"{self.cites(s.citations, s.review)}</p>"
         )
         if s.description:
             h.append(f"<p>{escape(s.description)}</p>")
@@ -250,7 +258,7 @@ class _Renderer:
             for e in s.edits:
                 h.append(
                     f"<li>{escape(e.message)}: valid when <code>{escape(edit_text(e.edit))}"
-                    f"</code>{self.cites(e.citations)}</li>"
+                    f"</code>{self.cites(e.citations, e.review)}</li>"
                 )
             h.append("</ul>")
         else:

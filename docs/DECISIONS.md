@@ -256,3 +256,121 @@ per-page and total tokens to stderr, writes `<out>.usage.json`, and defaults `--
 to 150000. `--record DIR` wraps any backend in `RecordingBackend`, which saves each raw response
 and its usage so a live run can be replayed without the API. No price is hardcoded: cost belongs in
 the STATUS report, from the current price list.
+
+## D24 · 2026-11-19 · HTML sources become Pages, one per h1/h2 section
+
+`concord.html.read_html(path)` returns `list[Page]` so the extractor, verifier and table finder need
+no HTML-specific code. A page is one `h1`/`h2` section (text before the first heading is page 1 with no
+locator); `Page.number` is the section index and `Page.locator` the heading, which the extraction
+prompt tells the model to cite. Tables are written to layout text with two-space column gaps, so
+`extract_tables` works unchanged; nested tables are flattened into their cell. Scripts, styles and
+`<head>` are dropped; stdlib `html.parser` only; nesting over 200 or a file over 20 MB raises
+`HtmlError`. The CLI picks the reader by file suffix. No new dependency.
+
+## D25 · 2026-11-20 · `concord corpus convert`: one command, derived output stays out of git
+
+`concord corpus convert ID` reads a `use: ok` pdf/html source from `corpus/cache/<id>/` (it never
+fetches), extracts (live or `--replay`), re-verifies every citation, lints standard tags, and writes
+`corpus/out/<id>/` (git-ignored: derived from a third-party document, hard rule 2). The review list
+(`review.json`, exit 2 when non-empty) holds extraction items (`unverified`, `conflict`,
+`invalid_response`, `token_cap`), `verify_failed` and `lint_error`; lint warnings are not review items.
+The provider is the source's `publisher`. Both FIX dictionaries must be present before any model
+call, so a missing one costs nothing. Output is deterministic. No new dependency.
+
+## D26 · 2026-11-21 · Verifier: locator check, ambiguity as a warning
+
+`verify_citation` adds `locator_mismatch` (a failure): when the cited page has a locator (an HTML
+section heading) and the citation gives one, they must agree after `fold`. Pages without a locator
+(every PDF page, and HTML text before the first heading) cannot check one, so a free-form locator such
+as "table 4.2" passes unchanged. A quote that also appears on other pages is still `verified` (D10:
+no new failure for a true quote) and is reported through `CitationResult.also_on` and
+`VerifyReport.ambiguous`, in text and in JSON under `ambiguous`; the extractor and `ok` ignore it.
+
+## D27 · 2026-11-22 · Library index: sidecar files, order-independent output
+
+`concord library` renders each spec with `render_site` under `<provider-slug>/` (own `style.css`, so
+every sub-site works alone) plus a top-level index. Entries are sorted by provider (case-insensitive)
+then canonical IR JSON before slugs are assigned (`acme`, `acme-2`), so output does not depend on
+argument order. "Cited" counts every fact that can carry a citation (strategies, parameters, enum
+values, edits) and shows `cited / total`. Lint and review figures come from `lint.json` and
+`review.json` beside the spec; `corpus convert` writes `lint.json` for this (warnings are not review
+items). A malformed sidecar is an error naming the file. No new dependency.
+
+## D28 · 2026-11-23 · MCP server: optional extra, 2.x SDK, tools return summary plus JSON
+
+`concord mcp` needs the `mcp` extra so the core stays dependency-light (as `llm`, D11). The extra is
+`mcp>=1.2`; the lock holds 2.3.0, whose server class is `mcp.server.mcpserver.MCPServer` (renamed from
+FastMCP). Licences of everything the extra adds, checked 2026-11-23: mcp, mcp-types, anyio, attrs,
+click, jsonschema, jsonschema-specifications, PyJWT, referencing, rpds-py, truststore: MIT/BSD;
+httpx2, httpcore2, h11, idna, pycparser, sse-starlette, starlette, uvicorn: BSD; cryptography:
+Apache-2.0 OR BSD-3-Clause; opentelemetry-api, python-multipart: Apache-2.0; cffi: MIT-0. None is
+GPL/AGPL/LGPL. Tool logic is plain functions in `concord.mcp_tools` returning `{summary, data}` or
+raising `ToolError`, so tests need no transport; the SDK file only registers them. Tools read only the
+paths the caller names (20 MB cap, existing hardened readers) and never write or fetch.
+
+## D29 · 2026-11-24 · Diff: provenance drift is opt-in and same-source only
+
+`concord diff --provenance` (and `diff_specs(..., provenance=True)`) adds cosmetic
+`provenance_changed` entries after the normal changes. For each fact present on both sides, citations
+are grouped by `source_id`; only a source named on both sides is compared, as sets of
+`source:page "quote"`, so two different editions never report drift (every page would move). Facts are
+matched like the main diff: strategies by name or unambiguous wire-value rename, parameters by name,
+enum values by wire value. Edits (matched only by position) and parameters renamed by tag are not
+covered. The value of the fact is not re-checked: any value change is already its own entry. D9
+severity rules are untouched, and without the flag output is byte-identical.
+
+## D30 · 2026-11-25 · Review page: one card per review item, quotes carried on the item
+
+The review page reads a `corpus convert` folder only: `review.json` items, `lint.json` warnings
+(`lint_warning` cards), `spec.json` (to describe a fact that was kept) and the source document found
+through `source.json` or `--source`. `ReviewItem.quotes` records the (page, quote) pairs the model gave
+so the left pane can show the cited page without parsing `detail`; it is written to `review.json` only
+when non-empty. A quote is `<mark>`ed when it matches the page text exactly apart from whitespace;
+a quote that matches only after D10 folding (hyphenation, typography) is reported "found after
+normalising" and not marked, because folded positions do not map back to the original text; a quote
+that does not match even then is reported as not found on that page. Card id = first 12 hex of
+SHA-256 of `location|reason|page`, with `-2`, `-3` for repeats. No JS, all text escaped, no new
+dependency.
+
+## D31 · 2026-11-26 · Human verification: a Review record on the fact
+
+IR: every cited fact (`Strategy`, `Parameter`, `EnumValue`, `StrategyEdit`) gains optional
+`review: Review` (`decision` accepted/rejected/corrected, `reviewer`, `at` date, `note`, `card_id`).
+Additive, so `IR_VERSION` stays 0.1. A reviewed fact (accepted or corrected) is shown as
+"human-verified" with reviewer and date on the site and counts as cited in the library; the citation
+verifier is unchanged (a Review never makes a quote verify). Decisions live in `decisions.json`
+beside the review list, keyed by card id (D30). `concord review OUT_DIR --apply-decisions` always starts
+from `spec.extracted.json` (a copy of the first `spec.json`), so it is idempotent and never calls a
+model; that is why it is a `review` option and not `corpus convert --apply-decisions`. Reject drops the
+fact; a correction replaces fields by name (never `citations` or `review`) and is re-validated;
+Accept on a fact the extractor already dropped is reported unapplied until 16c restores it. Lint
+warning cards never block (exit 2 only for open error/unverified/conflict cards or unapplied
+decisions). No new dependency.
+
+## D32 · 2026-11-27 · Restoring a dropped fact from its review card
+
+A card for a fact the extractor dropped carries that fact as IR JSON in `ReviewItem.fact`, with all
+`citations` removed: the citations did not verify, so the restored fact counts as cited only through
+its `Review` (D31). It is stored only when present, so older `review.json` files load unchanged (their
+Accept stays unapplied, with a message saying the file does not carry the fact). Accept or Correct
+inserts the fact at the end of its parent's list (Strategy at the end of the strategies, Parameter
+under its Strategy, EnumValue under its Parameter, StrategyEdit under its Strategy), which keeps the
+result deterministic; a correction overlays fields by name before validation. A dropped Strategy's JSON
+includes its original parameters, so restoring it restores them (uncited), and their own cards then
+find them present. Decisions are applied in order of depth, parents first, so a restored Strategy
+exists when its Parameter card is applied. If the parent is still absent the card is unapplied with
+the parent named. No new dependency.
+
+## D33 · 2026-11-28 · Review server: pure handler, token on every request, site-only file serving
+
+`concord.review_server.handle` answers a request from its parts and touches only the output folder;
+`make_server` binds 127.0.0.1 (port 0 by default) and wraps it. Safety rules: the Host header must be
+`127.0.0.1:PORT` or `localhost:PORT` (400); every request, GETs included, carries `?t=TOKEN`
+(`secrets.token_urlsafe(16)`, compared with `hmac.compare_digest`, 403); bodies over 64 KiB get 413;
+request logging is off because the URL carries the token. `/site/...` serves only files that resolve
+inside `OUT_DIR/site` (stricter than "inside OUT_DIR": `review.json`, `decisions.json` and the spec are
+never served), so `..` and symlinks out give 404. `POST /decide` stamps `at` as a UTC timestamp
+(`decisions.py` reads its date part), validates card id, decision, reviewer and correction field, and
+rewrites `decisions.json` atomically with every other key unchanged. `POST /apply` runs
+`apply_to_folder`; both POSTs answer 303 so a reload does not resubmit. The page is plain forms, no
+JavaScript. No new dependency.

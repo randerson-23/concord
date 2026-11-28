@@ -38,6 +38,27 @@ available locally (they are not committed until their license is confirmed):
 CONCORD_FIXATDL_XSD_DIR=/path/to/xsds uv run pytest
 ```
 
+## MCP server (optional)
+
+`concord mcp` runs a read-only [MCP](https://modelcontextprotocol.io) server on stdio, so an
+assistant can answer "what is tag 849 in FIX 4.2?" or "what breaks between v1 and v2 of this spec?"
+with Concord's deterministic results. Tools: `fix_field`, `lint_spec`, `diff_specs`,
+`describe_spec`. It reads only the files you name, writes nothing, and needs no API key. The FIX
+dictionaries are read from disk as for `concord lint` (see `docs/DECISIONS.md` D21). It needs the
+`mcp` extra:
+
+```sh
+uv sync --extra mcp
+claude mcp add concord -- uv run --extra mcp concord mcp      # Claude Code
+```
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{"mcpServers": {"concord": {"command": "uv",
+  "args": ["run", "--directory", "/path/to/concord", "--extra", "mcp", "concord", "mcp"]}}}
+```
+
 ## Layout
 
 | Path | What |

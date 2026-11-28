@@ -16,16 +16,29 @@ from concord.corpus import (
     plan_sources,
     plan_text,
 )
+from concord.decisions import apply_to_folder
 from concord.diff import diff_specs
 from concord.extract import AnthropicBackend, RecordingBackend, ReplayBackend, extract_spec
 from concord.fixatdl import FixatdlError, read_fixatdl_file, write_fixatdl
 from concord.fixdict import dictionary_path, load_dictionary
+from concord.html import read_html
 from concord.ir import AlgoSpec, SourceDocument
+from concord.library import entry_for, write_library
 from concord.lint import lint_spec
 from concord.orchestra import write_orchestra
-from concord.pdf import read_pdf
+from concord.pdf import Page, read_pdf
+from concord.pipeline import DEFAULT_OUT, convert_source
+from concord.review import build_review
 from concord.site import write_site
 from concord.verify import verify_spec
+
+
+def _is_html(path: str) -> bool:
+    return Path(path).suffix.lower() in (".html", ".htm")
+
+
+def _read_pages(path: str) -> list[Page]:
+    return read_html(path) if _is_html(path) else read_pdf(path)
 
 
 def _load(path: str) -> AlgoSpec:
@@ -83,6 +96,11 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument(
         "--fail-on-breaking", action="store_true", help="exit 2 if any breaking change is found"
     )
+    d.add_argument(
+        "--provenance",
+        action="store_true",
+        help="also report citations that moved (page or quote) for the same source",
+    )
     v = sub.add_parser("verify", help="check every citation quote appears on its cited PDF page")
     v.add_argument("spec")
     v.add_argument(
@@ -121,6 +139,18 @@ def main(argv: list[str] | None = None) -> int:
         cp.add_argument("--cache-dir", default=str(DEFAULT_CACHE))
         if name == "plan":
             cp.add_argument("--price-per-mtok", type=float, help="price per million input tokens")
+    cv = cosub.add_parser(
+        "convert", help="extract, verify, lint and write every output for a source"
+    )
+    cv.add_argument("id", help="source id from corpus/sources.yaml (fetch it first)")
+    cv.add_argument("--sources", default=str(DEFAULT_SOURCES))
+    cv.add_argument("--cache-dir", default=str(DEFAULT_CACHE))
+    cv.add_argument("--out-dir", default=str(DEFAULT_OUT), help="default corpus/out")
+    cv.add_argument("--replay", metavar="DIR", help="use recorded page-N.json responses, no API")
+    cv.add_argument("--record", metavar="DIR", help="save raw responses and usage (live runs)")
+    cv.add_argument("--max-input-tokens", type=int, default=150_000)
+    cv.add_argument("--fix-version", choices=["4.2", "4.4", "latest"], default="latest")
+    cv.add_argument("--dict-dir", help="directory holding the Orchestra dictionary files")
     li = sub.add_parser("lint", help="check standard FIX tags against the FIX dictionary")
     li.add_argument("spec")
     li.add_argument("--fix-version", choices=["4.2", "4.4", "latest"], default="latest")
@@ -130,6 +160,21 @@ def main(argv: list[str] | None = None) -> int:
     st.add_argument("spec")
     st.add_argument("out_dir")
     st.add_argument("--diff", metavar="OLD", help="previous version; adds a changes.html report")
+    lb = sub.add_parser("library", help="render many specs and a cross-spec index")
+    lb.add_argument("out_dir")
+    lb.add_argument("specs", nargs="*", help="FIXatdl or IR JSON files")
+    lb.add_argument("--from-corpus", metavar="DIR", help="also take every DIR/*/spec.json")
+    rv = sub.add_parser("review", help="write a read-only review page for a corpus convert folder")
+    rv.add_argument("out_dir", help="a corpus/out/<id> folder")
+    rv.add_argument("--source", help="the source PDF or HTML (default: path in source.json)")
+    rv.add_argument("--serve", action="store_true", help="serve the page locally with forms")
+    rv.add_argument("--port", type=int, default=0, help="port for --serve (default: any free port)")
+    rv.add_argument(
+        "--apply-decisions",
+        action="store_true",
+        help="apply decisions.json to the spec and rewrite the outputs (no model call)",
+    )
+    sub.add_parser("mcp", help="run a read-only MCP server on stdio (needs the mcp extra)")
     sub.add_parser("schema", help="print the IR JSON Schema")
     args = ap.parse_args(argv)
 
@@ -139,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "inspect":
             print(_inspect(_load(args.file)))
         elif args.cmd == "diff":
-            report = diff_specs(_load(args.old), _load(args.new))
+            report = diff_specs(_load(args.old), _load(args.new), provenance=args.provenance)
             print(report.to_json() if args.format == "json" else report.to_text())
             if args.fail_on_breaking and report.has_breaking:
                 return 2
@@ -149,7 +194,7 @@ def main(argv: list[str] | None = None) -> int:
                 sid, sep, path = item.partition("=")
                 if not sep or not sid or not path:
                     raise ValueError(f"--source {item!r}: expected ID=PDF_PATH")
-                docs[sid] = read_pdf(path)
+                docs[sid] = _read_pages(path)
             vr = verify_spec(_load(args.spec), docs)
             print(vr.to_json() if args.format == "json" else vr.to_text())
             if not vr.ok:
@@ -158,9 +203,10 @@ def main(argv: list[str] | None = None) -> int:
             backend = ReplayBackend(args.replay) if args.replay else AnthropicBackend()
             if args.record:
                 backend = RecordingBackend(backend, args.record)
-            src = SourceDocument(id=args.id, title=args.title, kind="pdf", url=args.url)
+            kind = "html" if _is_html(args.pdf) else "pdf"
+            src = SourceDocument(id=args.id, title=args.title, kind=kind, url=args.url)
             res = extract_spec(
-                read_pdf(args.pdf),
+                _read_pages(args.pdf),
                 src,
                 backend,
                 provider=args.provider,
@@ -179,6 +225,25 @@ def main(argv: list[str] | None = None) -> int:
             if res.review:
                 return 2
         elif args.cmd == "corpus":
+            if args.corpus_cmd == "convert":
+                backend = ReplayBackend(args.replay) if args.replay else AnthropicBackend()
+                if args.record:
+                    backend = RecordingBackend(backend, args.record)
+                done = convert_source(
+                    args.id,
+                    backend,
+                    sources=args.sources,
+                    cache_dir=args.cache_dir,
+                    out_root=args.out_dir,
+                    fix_version=args.fix_version,
+                    dict_dir=args.dict_dir,
+                    max_input_tokens=args.max_input_tokens,
+                )
+                if done.extraction is not None:
+                    print(done.extraction.usage_text(), file=sys.stderr)
+                print(f"wrote {done.out_dir}")
+                print(done.review_text())
+                return 2 if done.review else 0
             sources = load_sources(args.sources)
             if args.corpus_cmd == "fetch":
                 results = fetch_sources(sources, args.cache_dir, args.ids)
@@ -204,6 +269,36 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "site":
             old = _load(args.diff) if args.diff else None
             files = write_site(_load(args.spec), args.out_dir, old)
+            print(f"wrote {len(files)} files to {args.out_dir}")
+        elif args.cmd == "review":
+            if args.serve:
+                from concord.review_server import serve
+
+                serve(args.out_dir, args.port)
+            elif args.apply_decisions:
+                done = apply_to_folder(args.out_dir)
+                print(
+                    f"applied {len(done.applied)}, unapplied {len(done.unapplied)}, "
+                    f"open {len(done.open_cards)}"
+                )
+                for u in done.unapplied:
+                    print(f"  unapplied {u['card_id']} {u['location']}: {u['reason']}")
+                if not done.resolved:
+                    return 2
+            else:
+                files = build_review(args.out_dir, args.source)
+                print(f"wrote {len(files)} files to {Path(args.out_dir) / 'review'}")
+        elif args.cmd == "mcp":
+            from concord.mcp_server import serve
+
+            serve()
+        elif args.cmd == "library":
+            paths = [*args.specs]
+            if args.from_corpus:
+                paths += [str(p) for p in sorted(Path(args.from_corpus).glob("*/spec.json"))]
+            if not paths:
+                raise ValueError("no specs: give SPEC files or --from-corpus DIR with */spec.json")
+            files = write_library([entry_for(_load(p), p) for p in paths], args.out_dir)
             print(f"wrote {len(files)} files to {args.out_dir}")
         elif args.cmd == "convert":
             spec = _load(args.file)
