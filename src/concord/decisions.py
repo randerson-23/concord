@@ -66,9 +66,11 @@ def load_decisions(path: Path) -> dict[str, dict[str, Any]]:
         if not isinstance(d.get("reviewer"), str) or not d["reviewer"].strip():
             raise ValueError(f"{path}: card {cid}: reviewer is required")
         try:
-            date.fromisoformat(str(d.get("at")))
+            date.fromisoformat(str(d.get("at"))[:10])
         except ValueError as exc:
-            raise ValueError(f"{path}: card {cid}: 'at' must be an ISO date, YYYY-MM-DD") from exc
+            raise ValueError(
+                f"{path}: card {cid}: 'at' must be an ISO date (YYYY-MM-DD) or timestamp"
+            ) from exc
         corr = d.get("corrections")
         if d["decision"] == "correct" and not (isinstance(corr, dict) and corr):
             raise ValueError(f"{path}: card {cid}: a correction needs a non-empty 'corrections'")
@@ -185,7 +187,7 @@ def apply_decisions(
                 fact.review = Review(
                     decision=verdict,
                     reviewer=d["reviewer"],
-                    at=date.fromisoformat(str(d["at"])),
+                    at=date.fromisoformat(str(d["at"])[:10]),
                     note=d.get("note"),
                     card_id=cid,
                 )
@@ -210,7 +212,7 @@ def apply_decisions(
             restored.review = Review(
                 decision="accepted" if d["decision"] == "accept" else "corrected",
                 reviewer=d["reviewer"],
-                at=date.fromisoformat(str(d["at"])),
+                at=date.fromisoformat(str(d["at"])[:10]),
                 note=d.get("note"),
                 card_id=cid,
             )
@@ -227,7 +229,7 @@ def apply_decisions(
     return result
 
 
-def _atomic_write(path: Path, data: bytes) -> None:
+def atomic_write(path: Path, data: bytes) -> None:
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_bytes(data)
     os.replace(tmp, path)
@@ -235,11 +237,11 @@ def _atomic_write(path: Path, data: bytes) -> None:
 
 def write_outputs(root: Path, spec: AlgoSpec) -> None:
     """Rewrite the spec-derived outputs of a convert folder."""
-    _atomic_write(
+    atomic_write(
         root / "spec.json", (spec.model_dump_json(indent=2, exclude_none=True) + "\n").encode()
     )
-    _atomic_write(root / "strategies.xml", write_fixatdl(spec))
-    _atomic_write(root / "orchestra.xml", write_orchestra(spec).xml)
+    atomic_write(root / "strategies.xml", write_fixatdl(spec))
+    atomic_write(root / "orchestra.xml", write_orchestra(spec).xml)
     write_site(spec, root / "site")
 
 
@@ -251,12 +253,12 @@ def apply_to_folder(out_dir: str | Path) -> ApplyResult:
         source = root / "spec.json"
         if not source.is_file():
             raise ValueError(f"{source}: not found; expected a `concord corpus convert` folder")
-        _atomic_write(extracted, source.read_bytes())
+        atomic_write(extracted, source.read_bytes())
     spec = AlgoSpec.model_validate_json(extracted.read_text(encoding="utf-8"))
     decisions_path = root / "decisions.json"
     decisions = load_decisions(decisions_path) if decisions_path.is_file() else {}
     result = apply_decisions(spec, load_items(root), decisions)
     write_outputs(root, result.spec)
     report = json.dumps(result.to_dict(), indent=2) + "\n"
-    _atomic_write(root / "applied.json", report.encode())
+    atomic_write(root / "applied.json", report.encode())
     return result

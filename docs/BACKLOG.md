@@ -414,7 +414,7 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `tests/test_decisions.py`: extraction stores the fact, Accept and Correct restore in place, Reject,
     missing parent, an invalid correction, and restored facts in `spec.json`, `strategies.xml`,
     `orchestra.xml` and the site, byte-identical over two applies.
-16d. `todo` **Review screen, part 4: the local server.** (Sharpened 2026-11-28.) The last piece
+16d. `done 2026-11-28` **Review screen, part 4: the local server.** (Sharpened 2026-11-28.) The last piece
     of the review screen: today a reviewer must hand-edit `decisions.json`. After this, `concord
     review OUT_DIR --serve` opens the side-by-side page with buttons, and one click rebuilds the
     outputs. It is the first thing a design partner can use without a terminal editor.
@@ -450,6 +450,13 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     - `POST /apply` changes `spec.json`, and a second apply is byte-identical.
     - One smoke test starts the real server on an ephemeral port in a thread, makes one GET and
       one POST with `urllib`, then shuts it down.
+    Done (decision D33): `concord review OUT_DIR --serve [--port N]` and `concord.review_server`
+    (`handle`, `make_server`, `serve`). `handle(method, target, headers, body, *, root, token, port,
+    now)` is a pure function; the `http.server` class only reads the request and writes the answer.
+    Routes `GET /`, `/style.css`, `/site/...`; `POST /decide`, `/apply`. Host check (400), token on
+    every request (403), 64 KiB body cap (413), unknown card, decision, reviewer or field (400, names
+    the field), 404 otherwise. Tests: `tests/test_review_server.py` (all of it through `handle`, plus
+    one real-socket GET and POST). Follow-up: none required; a "restore dropped fact" hint on cards.
 17. `todo` MCP server: FIX repository lookups plus the public spec library.
 18. `todo` Hosted spec portal with change-watch alerts.
 

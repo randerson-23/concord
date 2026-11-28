@@ -134,7 +134,13 @@ def _left(item: dict[str, Any], pages: list[Page] | None) -> str:
     return "\n".join(out)
 
 
-def _card(cid: str, item: dict[str, Any], pages: list[Page] | None, spec: AlgoSpec | None) -> str:
+def _card(
+    cid: str,
+    item: dict[str, Any],
+    pages: list[Page] | None,
+    spec: AlgoSpec | None,
+    extra: str = "",
+) -> str:
     loc = item.get("location", "")
     names = [n for _, n in _SEG.findall(loc)]
     shown = " &rsaquo; ".join(escape(n) for n in names) if names else escape(loc)
@@ -145,7 +151,7 @@ def _card(cid: str, item: dict[str, Any], pages: list[Page] | None, spec: AlgoSp
         f'<p><span class="kind {reason}">{reason}</span><strong>{shown}</strong></p>'
         f"<p>{escape(str(item.get('detail', '')))}</p>"
         f"<p><small>Fact: {escape(_fact(spec, loc))}</small></p>"
-        f"<p><small><code>{escape(loc)}</code></small></p>"
+        f"<p><small><code>{escape(loc)}</code></small></p>{extra}"
     )
     return (
         f'<div class="card" id="{cid}"><div class="cols"><div>{left}</div><div>{right}</div></div>'
@@ -153,21 +159,69 @@ def _card(cid: str, item: dict[str, Any], pages: list[Page] | None, spec: AlgoSp
     )
 
 
+def _live_form(cid: str, live: dict[str, Any]) -> str:
+    """The plain HTML form for one card (no JavaScript) shown by ``concord review --serve``."""
+    token = escape(live["token"])
+    done = live["decisions"].get(cid)
+    state = ""
+    if isinstance(done, dict):
+        who = f"{done.get('reviewer', '')}, {done.get('at', '')}"
+        state = (
+            f"<p><strong>Decision: {escape(str(done.get('decision')))}</strong> ({escape(who)})</p>"
+        )
+    return (
+        f'{state}<form method="post" action="/decide?t={token}">'
+        f'<input type="hidden" name="card" value="{escape(cid)}">'
+        f'<p><label>Reviewer <input name="reviewer" value="{escape(live["reviewer"])}"></label> '
+        '<label>Note <input name="note"></label></p>'
+        '<p><label>Correct field <input name="field"></label> '
+        '<label>to <input name="value"></label></p>'
+        '<p><button name="decision" value="accept">Accept</button> '
+        '<button name="decision" value="reject">Reject</button> '
+        '<button name="decision" value="correct">Correct</button></p></form>'
+    )
+
+
+def _live_header(live: dict[str, Any]) -> str:
+    token = escape(live["token"])
+    applied = live.get("applied")
+    status = "Not applied yet."
+    if isinstance(applied, dict):
+        status = (
+            f"Last apply: {len(applied.get('applied', []))} applied, "
+            f"{len(applied.get('unapplied', []))} unapplied, {len(applied.get('open', []))} open."
+        )
+    return (
+        f'<form method="post" action="/apply?t={token}"><p>{escape(status)} '
+        "<button>Apply decisions and rebuild</button> "
+        f'<a href="/site/index.html?t={token}">Rebuilt site</a></p></form>'
+    )
+
+
 def render_review(
-    items: list[dict[str, Any]], pages: list[Page] | None, spec: AlgoSpec | None
+    items: list[dict[str, Any]],
+    pages: list[Page] | None,
+    spec: AlgoSpec | None,
+    live: dict[str, Any] | None = None,
 ) -> dict[str, str]:
+    """Static page, or with ``live`` (token, decisions, applied, reviewer) the served version."""
     ids = card_ids(items)
     counts = Counter(str(i.get("reason")) for i in items)
     summary = (
         ", ".join(f"{n} {escape(k)}" for k, n in sorted(counts.items())) or "nothing to review"
     )
-    cards = "\n".join(_card(c, i, pages, spec) for c, i in zip(ids, items, strict=True))
+    cards = "\n".join(
+        _card(c, i, pages, spec, _live_form(c, live) if live else "")
+        for c, i in zip(ids, items, strict=True)
+    )
+    css = f"style.css?t={escape(live['token'])}" if live else "style.css"
+    header = _live_header(live) if live else ""
     page = (
         "<!DOCTYPE html>\n"
         '<html lang="en"><head><meta charset="utf-8"><meta name="viewport" '
         'content="width=device-width,initial-scale=1"><title>Review</title>'
-        '<link rel="stylesheet" href="style.css"></head>\n'
-        f"<body><h1>Review</h1><p>{len(items)} items: {summary}.</p>\n"
+        f'<link rel="stylesheet" href="{css}"></head>\n'
+        f"<body><h1>Review</h1><p>{len(items)} items: {summary}.</p>\n{header}"
         f'<div class="cards">\n{cards}\n</div></body></html>\n'
     )
     return {"index.html": page, "style.css": STYLE_CSS + REVIEW_CSS}
@@ -191,9 +245,10 @@ def load_items(root: Path) -> list[dict[str, Any]]:
     return items
 
 
-def build_review(out_dir: str | Path, source: str | Path | None = None) -> list[Path]:
-    """Write ``OUT_DIR/review/``; returns the files written."""
-    root = Path(out_dir)
+def load_context(
+    root: Path, source: str | Path | None = None
+) -> tuple[list[dict[str, Any]], list[Page] | None, AlgoSpec | None]:
+    """Items, source pages (if the document can be found) and the extracted spec of a folder."""
     items = load_items(root)
     spec_file = root / "spec.json"
     spec = AlgoSpec.model_validate_json(spec_file.read_text()) if spec_file.is_file() else None
@@ -204,6 +259,13 @@ def build_review(out_dir: str | Path, source: str | Path | None = None) -> list[
         src = Path(_read_json(info, "source.json")["path"])
     if src is not None and src.is_file():
         pages = read_html(src) if src.suffix.lower() in (".html", ".htm") else read_pdf(src)
+    return items, pages, spec
+
+
+def build_review(out_dir: str | Path, source: str | Path | None = None) -> list[Path]:
+    """Write ``OUT_DIR/review/``; returns the files written."""
+    root = Path(out_dir)
+    items, pages, spec = load_context(root, source)
     written = []
     for rel, text in render_review(items, pages, spec).items():
         path = root / "review" / rel

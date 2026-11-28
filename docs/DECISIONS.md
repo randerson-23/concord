@@ -360,3 +360,17 @@ includes its original parameters, so restoring it restores them (uncited), and t
 find them present. Decisions are applied in order of depth, parents first, so a restored Strategy
 exists when its Parameter card is applied. If the parent is still absent the card is unapplied with
 the parent named. No new dependency.
+
+## D33 · 2026-11-28 · Review server: pure handler, token on every request, site-only file serving
+
+`concord.review_server.handle` answers a request from its parts and touches only the output folder;
+`make_server` binds 127.0.0.1 (port 0 by default) and wraps it. Safety rules: the Host header must be
+`127.0.0.1:PORT` or `localhost:PORT` (400); every request, GETs included, carries `?t=TOKEN`
+(`secrets.token_urlsafe(16)`, compared with `hmac.compare_digest`, 403); bodies over 64 KiB get 413;
+request logging is off because the URL carries the token. `/site/...` serves only files that resolve
+inside `OUT_DIR/site` (stricter than "inside OUT_DIR": `review.json`, `decisions.json` and the spec are
+never served), so `..` and symlinks out give 404. `POST /decide` stamps `at` as a UTC timestamp
+(`decisions.py` reads its date part), validates card id, decision, reviewer and correction field, and
+rewrites `decisions.json` atomically with every other key unchanged. `POST /apply` runs
+`apply_to_folder`; both POSTs answer 303 so a reload does not resubmit. The page is plain forms, no
+JavaScript. No new dependency.

@@ -167,6 +167,8 @@ def main(argv: list[str] | None = None) -> int:
     rv = sub.add_parser("review", help="write a read-only review page for a corpus convert folder")
     rv.add_argument("out_dir", help="a corpus/out/<id> folder")
     rv.add_argument("--source", help="the source PDF or HTML (default: path in source.json)")
+    rv.add_argument("--serve", action="store_true", help="serve the page locally with forms")
+    rv.add_argument("--port", type=int, default=0, help="port for --serve (default: any free port)")
     rv.add_argument(
         "--apply-decisions",
         action="store_true",
@@ -269,7 +271,11 @@ def main(argv: list[str] | None = None) -> int:
             files = write_site(_load(args.spec), args.out_dir, old)
             print(f"wrote {len(files)} files to {args.out_dir}")
         elif args.cmd == "review":
-            if args.apply_decisions:
+            if args.serve:
+                from concord.review_server import serve
+
+                serve(args.out_dir, args.port)
+            elif args.apply_decisions:
                 done = apply_to_folder(args.out_dir)
                 print(
                     f"applied {len(done.applied)}, unapplied {len(done.unapplied)}, "

@@ -6,11 +6,11 @@
 
 ## Last run
 
-**2026-11-27 (daily firing) — Accept restores a dropped fact (backlog 16c, D32).** Worker made review
-cards for facts the extractor dropped carry the fact itself, so Accept or Correct in `decisions.json`
-now restores it (as a human-verified fact) and Reject keeps it out; older review files still load.
-Only the local server (16d) is left of the review screen. PR #22 is still unmerged (Needs owner 9);
-the API key is still not visible here (Needs owner 8). No new dependency.
+**2026-11-28 (daily firing) — the review server (backlog 16d, D33).** Worker finished the review
+screen: `concord review OUT_DIR --serve` serves the side-by-side page with Accept, Reject and Correct
+forms, records decisions in `decisions.json`, and one button applies them and rebuilds the outputs.
+It listens on 127.0.0.1 only and needs a random token on every request. PR #22 is still unmerged
+(Needs owner 9); the API key is still not visible here (Needs owner 8). No new dependency.
 
 ## Needs owner
 
