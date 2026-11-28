@@ -414,13 +414,42 @@ Every item must leave `uv run ruff check .`, `uv run ruff format --check .` and
     `tests/test_decisions.py`: extraction stores the fact, Accept and Correct restore in place, Reject,
     missing parent, an invalid correction, and restored facts in `spec.json`, `strategies.xml`,
     `orchestra.xml` and the site, byte-identical over two applies.
-16d. `todo` **Review screen, part 4: the local server.** `concord review OUT_DIR --serve`: stdlib
-    `http.server` on 127.0.0.1 only, a random token printed in the URL and required on every POST,
-    nothing served outside `OUT_DIR`, atomic writes to `decisions.json` (stamp `at`, take `reviewer`
-    from a form field), plain `<form method=post>` per card (Accept, Reject, Correct with a value
-    box), a "rebuild" button that runs `--apply-decisions`, Ctrl-C to stop. Handler tested directly
-    (no sockets): accept, reject, correct, bad token 403, path traversal 404; one smoke test on an
-    ephemeral port with one POST.
+16d. `todo` **Review screen, part 4: the local server.** (Sharpened 2026-11-28.) The last piece
+    of the review screen: today a reviewer must hand-edit `decisions.json`. After this, `concord
+    review OUT_DIR --serve` opens the side-by-side page with buttons, and one click rebuilds the
+    outputs. It is the first thing a design partner can use without a terminal editor.
+    Do this:
+    - Put the logic in a pure function, e.g. `review_server.handle(method, path, headers, body,
+      *, root, token) -> (status, headers, body)`, and keep the `http.server` subclass a thin
+      wrapper around it. Stdlib only, no new dependency.
+    - Routes: `GET /?t=TOKEN` renders the page through `review.render_review` with a form per card
+      (Accept, Reject, Correct with a value box, a reviewer field, and an optional note).
+      `POST /decide` records one decision. `POST /apply` runs `decisions.apply_to_folder`. Both
+      POSTs answer 303 to `/?t=TOKEN`, so a reload never re-submits. `GET /site/...` serves the
+      rebuilt site read-only. Anything else is 404.
+    - Writes reuse `decisions._atomic_write`. Stamp `at` in UTC ISO-8601 and keep the existing
+      keys of `decisions.json` untouched, apart from the card being decided. The page shows the
+      exit state of the last apply: how many applied, and which cards are still open.
+    - Safety:
+      - Bind 127.0.0.1 only, with port 0 by default, and print the URL with the token.
+      - The token comes from `secrets.token_urlsafe(16)` and is compared with
+        `hmac.compare_digest`. It must be on every request, the GETs included.
+      - Return 400 unless the Host header is `127.0.0.1:PORT` or `localhost:PORT` (this guards
+        against DNS rebinding).
+      - Cap request bodies at 64 KiB (413 above that).
+      - Resolve every served path and refuse it unless it sits inside `OUT_DIR` (404).
+      - Return 400 for an unknown card id or decision, naming the field.
+      - Ctrl-C stops the server cleanly.
+    - The page needs no JavaScript: plain `<form method=post>`. Escape every value taken from the
+      spec or the PDF.
+    Acceptance:
+    - `handle` is tested directly, with no sockets: accept, reject and correct each write the
+      expected `decisions.json`; a missing or wrong token gives 403; a bad Host gives 400; a
+      `../` path or a symlink out of `OUT_DIR` gives 404; an oversize body gives 413; an unknown
+      card gives 400.
+    - `POST /apply` changes `spec.json`, and a second apply is byte-identical.
+    - One smoke test starts the real server on an ephemeral port in a thread, makes one GET and
+      one POST with `urllib`, then shuts it down.
 17. `todo` MCP server: FIX repository lookups plus the public spec library.
 18. `todo` Hosted spec portal with change-watch alerts.
 
